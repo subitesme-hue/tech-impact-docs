@@ -57,7 +57,7 @@ Return ONLY JSON:
  "global_relevance": string (why this matters beyond ${t.region}),
  "sources": [{"title": string, "url": string}] (3-8)}
 English only.`;
-  const d = await chat({ model: cfg.research_model, plugins: [{ id: 'web', max_results: 10 }], response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 9000, reasoning: { max_tokens: 2000 },
+  const d = await chat({ model: cfg.research_model, plugins: [{ id: 'web', max_results: 10 }], response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 9000, reasoning: { effort: 'low' },
     messages: [{ role: 'system', content: system }, { role: 'user', content: `Region: ${t.region}\nSector: ${sector}\nToday: ${t.date}` }] });
   const msg = d.choices?.[0]?.message || {};
   const r = parseJson(msg.content);
@@ -126,7 +126,7 @@ SOCIAL POSTS ("post"):
 Return ONLY JSON: {"title","thumb","segments","outro","post"}. English only.`;
   let user = `Region: ${t.region}\nSector: ${res.sector}\nResearch (the only facts you may use):\n${JSON.stringify(res.research)}`;
   if (prevProblems.length) user += `\n\nYour previous draft was rejected for: ${prevProblems.join('; ')}. Fix all of these.`;
-  const d = await chat({ model: cfg.script_model, response_format: { type: 'json_object' }, temperature: 0.6, max_tokens: 16000, reasoning: { max_tokens: 2000 },
+  const d = await chat({ model: cfg.script_model, response_format: { type: 'json_object' }, temperature: 0.6, max_tokens: 16000, reasoning: { effort: 'low' },
     messages: [{ role: 'system', content: system }, { role: 'user', content: user }] });
   const ch = d.choices?.[0] || {};
   const rawText = String(ch.message?.content || '');
@@ -135,6 +135,7 @@ Return ONLY JSON: {"title","thumb","segments","outro","post"}. English only.`;
   console.log('  tail:', rawText.slice(-300).replace(/\n/g, ' '));
   if (d.error) console.log('  error:', JSON.stringify(d.error).slice(0, 500));
   fs.mkdirSync('out/logs', {recursive: true}); fs.writeFileSync(`out/logs/script-draft-${run + 1}.txt`, rawText);
+  if (!rawText && ch.finish_reason === 'length') throw new Error(`Model used the whole output budget on reasoning (${d.usage?.completion_tokens_details?.reasoning_tokens} reasoning tokens) and wrote nothing. Stopping instead of paying for identical retries.`);
   const s = parseJson(rawText);
   const problems = [];
   const words = x => String(x || '').split(/\s+/).filter(Boolean).length;
