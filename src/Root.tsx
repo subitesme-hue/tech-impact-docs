@@ -1,6 +1,6 @@
 import React from 'react';
 import {Composition} from 'remotion';
-import {Doc} from './Doc';
+import {Doc3} from './v3/Doc3';
 import type {DocProps} from './types';
 import {FPS, H, W} from './theme';
 import sample from '../props.sample.json';
@@ -8,7 +8,7 @@ import sample from '../props.sample.json';
 export const RemotionRoot: React.FC = () => (
   <Composition
     id="Doc"
-    component={Doc as any}
+    component={Doc3 as any}
     width={W}
     height={H}
     fps={FPS}

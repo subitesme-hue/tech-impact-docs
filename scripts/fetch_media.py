@@ -225,28 +225,22 @@ def find(query, kind, need, narration):
     return None
 
 
-tl = {(i['seg'], i['beat']): i['dur'] / 30 for i in p['timeline']['items'] if i['kind'] == 'beat'}
+tl = {(i['seg'], i['beat'], i['shot']): i['dur'] / 30 for i in p['timeline']['items'] if i['kind'] == 'shot'}
 if not (PEX or PIX):
-    print('No PEXELS_API_KEY / PIXABAY_API_KEY: every shot uses designed graphics.')
+    print('No PEXELS_API_KEY / PIXABAY_API_KEY: footage shots fall back to designed graphics.')
 else:
     print(f'keys: pexels={"yes" if PEX else "NO"} pixabay={"yes" if PIX else "NO"} vision={"yes" if ORK else "NO"} ({VISION_MODEL})')
     th = p.get('thumb', {})
-    th['media'] = find(th.get('query') or p['title'], 'image', 0, th.get('headline', p['title']))
+    if th.get('query'):
+        th['media'] = find(th['query'], 'image', 0, th.get('headline', p['title']))
     for si, seg in enumerate(p['segments']):
         for bi, b in enumerate(seg['beats']):
-            v, need, line = b['visual'], tl[(si, bi)] + 0.6, b['narration']
-            t = v['type']
-            print(f'[{si}.{bi}] {t}')
-            if t in ('footage', 'split', 'device'):
-                v['media'] = find(v.get('query', ''), 'video', need, line)
-            elif t == 'stat' and v.get('query'):
-                v['media'] = find(v['query'], 'video', need, line)
-            elif t in ('photo3d', 'newspaper'):
-                v['media'] = find(v.get('query', ''), 'image', need, line)
-            elif t == 'multiframe':
-                v['medias'] = [find(q, 'video', need, line) for q in (v.get('queries') or [])[:4]]
-            elif t == 'filmstrip':
-                v['medias'] = [find(q, 'image', need, line) for q in (v.get('queries') or [])[:4]]
+            for ki, sh in enumerate(b['shots']):
+                if sh.get('kind') != 'footage':
+                    continue
+                need = tl.get((si, bi, ki), 3.0) + 0.4
+                print(f'[{si}.{bi}.{ki}] footage "{sh.get("query", "")}"')
+                sh['media'] = find(sh.get('query', ''), 'video', need, b['narration']) or find(sh.get('query', ''), 'image', need, b['narration'])
 
 p['media_credits'] = credits
 p['media_stats'] = stats

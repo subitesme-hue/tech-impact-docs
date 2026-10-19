@@ -1,16 +1,20 @@
 {
-  "id": "sample-v2",
+  "id": "sample-v3",
   "date": "2026-10-20",
-  "look": 1,
-  "region": "Africa",
-  "sector": "Financial inclusion",
-  "tech": "Mobile money",
-  "title": "The phone that became a bank",
+  "look": 0,
+  "region": "Middle East",
+  "sector": "Healthcare",
+  "tech": "Medical drone delivery",
+  "title": "Six Minutes by Air",
   "thumb": {
-    "kicker": "Africa \u00b7 Mobile money",
-    "headline": "How a text message lifted 194,000 homes",
-    "highlight": "194,000 homes",
-    "query": "woman using mobile phone market"
+    "kicker": "Saudi Arabia \u00b7 Medical drones",
+    "headline": "Ninety minutes by road. Six by drone.",
+    "highlight": "Six by drone",
+    "query": "delivery drone flying sky",
+    "focus": {
+      "lat": 21.4,
+      "lon": 39.9
+    }
   },
   "segments": [
     {
@@ -18,25 +22,50 @@
       "title": "In this episode",
       "beats": [
         {
-          "narration": "In Kenya, a text message moved about two percent of all households out of extreme poverty.",
-          "visual": {
-            "type": "footage",
-            "query": "woman using mobile phone street market"
-          }
+          "narration": "Ninety minutes by road. Six minutes by air. In one of the biggest crowds on Earth, Saudi Arabia has just licensed drones to carry medicine.",
+          "shots": [
+            {
+              "kind": "kinetic",
+              "text": "Ninety minutes by road",
+              "emphasis": "ninety"
+            },
+            {
+              "kind": "kinetic",
+              "text": "Six minutes by air",
+              "emphasis": "six",
+              "at": "Six"
+            },
+            {
+              "kind": "globe",
+              "focus": {
+                "lat": 21.4,
+                "lon": 39.9
+              },
+              "region": "GCC",
+              "points": [
+                {
+                  "name": "Mina",
+                  "lat": 21.4133,
+                  "lon": 39.8933
+                }
+              ],
+              "label": "Makkah, Saudi Arabia",
+              "at": "In"
+            },
+            {
+              "kind": "footage",
+              "query": "delivery drone flying over city",
+              "at": "licensed"
+            }
+          ]
         },
         {
-          "narration": "Today we look at mobile money: the problem it solves, what holds it back, where the money is, who uses it now, and what it means for the rest of us.",
-          "visual": {
-            "type": "agenda",
-            "items": [
-              "The tech in focus",
-              "The problem it solves",
-              "The challenges",
-              "The business opportunity",
-              "How it is used today",
-              "What it means for the future"
-            ]
-          }
+          "narration": "Today: how medical drones work, the problem they solve, what still holds them back, where the money is, who is flying them now, and what comes next.",
+          "shots": [
+            {
+              "kind": "agenda"
+            }
+          ]
         }
       ]
     },
@@ -45,25 +74,78 @@
       "title": "The tech in focus",
       "beats": [
         {
-          "narration": "Cash goes in at a corner shop, travels as a text, and comes out hundreds of kilometres away.",
-          "visual": {
-            "type": "ui",
-            "variant": "notify",
-            "app": "M-Pesa",
-            "lines": [
-              "You received KSh 2,000 from Amina",
-              "Balance: KSh 5,450",
-              "Withdraw at any agent near you"
-            ]
-          }
+          "narration": "The idea is simple. A drone lifts off from a health centre, skips the jammed roads, and lands at a hospital with medicine or lab samples on board.",
+          "shots": [
+            {
+              "kind": "flow",
+              "nodes": [
+                {
+                  "icon": "Building2",
+                  "label": "Health centre"
+                },
+                {
+                  "icon": "Drone",
+                  "label": "Drone in the air"
+                },
+                {
+                  "icon": "Hospital",
+                  "label": "Hospital"
+                }
+              ],
+              "mover": "Pill"
+            },
+            {
+              "kind": "route",
+              "points": [
+                {
+                  "name": "Masjid al-Haram",
+                  "lat": 21.4225,
+                  "lon": 39.8262
+                },
+                {
+                  "name": "Mina",
+                  "lat": 21.4133,
+                  "lon": 39.8933
+                }
+              ],
+              "mover": "Drone",
+              "label": "Holy sites corridor",
+              "at": "skips"
+            }
+          ]
         },
         {
-          "narration": "No bank branch, no account book. Just a basic phone.",
-          "visual": {
-            "type": "device",
-            "kind": "phone",
-            "query": "hands typing basic mobile phone"
-          }
+          "narration": "Each drone carries a cooling system for sensitive cargo, and every flight is scheduled and tracked live on a central dashboard.",
+          "shots": [
+            {
+              "kind": "icons",
+              "items": [
+                {
+                  "icon": "Thermometer",
+                  "label": "Cooled cargo bay"
+                },
+                {
+                  "icon": "Clock",
+                  "label": "Scheduled flights"
+                },
+                {
+                  "icon": "Activity",
+                  "label": "Live tracking"
+                }
+              ]
+            },
+            {
+              "kind": "device",
+              "device": "laptop",
+              "app": "Flight monitor",
+              "lines": [
+                "Flight 12 \u00b7 health centre to hospital",
+                "Cargo: cooled medical samples",
+                "Status: in flight, tracked live"
+              ],
+              "at": "tracked"
+            }
+          ]
         }
       ]
     },
@@ -72,27 +154,48 @@
       "title": "The problem it solves",
       "beats": [
         {
-          "narration": "Before 2007, sending money home meant a long bus ride or a costly transfer office.",
-          "visual": {
-            "type": "stat",
-            "value": 194000,
-            "label": "households left extreme poverty",
-            "source": "Suri & Jack, Science, 2016",
-            "query": "rural village road"
-          }
+          "narration": "During Hajj, millions of pilgrims crowd into Mina, Arafat and Muzdalifah, and a road delivery of medicine can take up to ninety minutes.",
+          "shots": [
+            {
+              "kind": "footage",
+              "query": "huge crowd pilgrims walking",
+              "label": "Hajj crowds"
+            },
+            {
+              "kind": "compare",
+              "title": "Delivery time in the holy sites",
+              "left": {
+                "icon": "Truck",
+                "label": "By road, up to",
+                "value": "90 min"
+              },
+              "right": {
+                "icon": "Drone",
+                "label": "By drone",
+                "value": "6 min"
+              },
+              "at": "ninety"
+            }
+          ]
         },
         {
-          "narration": "Millions of families simply had no bank nearby.",
-          "visual": {
-            "type": "ui",
-            "variant": "list",
-            "app": "Field survey \u00b7 2008",
-            "lines": [
-              "Nearest bank: 40 km away",
-              "Transfer fee: up to 10% of the amount",
-              "Savings kept under the mattress"
-            ]
-          }
+          "narration": "The pressure is real. More than twenty thousand hospital beds were set aside for this Hajj, and in the heat, every minute counts.",
+          "shots": [
+            {
+              "kind": "counter",
+              "value": 20000,
+              "suffix": "+",
+              "label": "Hospital beds allocated for Hajj 2026",
+              "icon": "Hospital",
+              "source": "Saudi Ministry of Health"
+            },
+            {
+              "kind": "kinetic",
+              "text": "In the heat every minute counts",
+              "emphasis": "minute",
+              "at": "heat"
+            }
+          ]
         }
       ]
     },
@@ -101,16 +204,27 @@
       "title": "The challenges",
       "beats": [
         {
-          "narration": "Agents need cash on hand, fraud is real, and fees still bite for the poorest users.",
-          "visual": {
-            "type": "cards",
-            "heading": "What holds it back",
-            "items": [
-              "Agent liquidity",
-              "Fraud and scams",
-              "Fees for small sums"
-            ]
-          }
+          "narration": "The permit is time-boxed to the holy sites and the Hajj season, so year-round routes need new approvals. Extreme heat and crowded airspace add risk.",
+          "shots": [
+            {
+              "kind": "icons",
+              "title": "What holds it back",
+              "items": [
+                {
+                  "icon": "FileText",
+                  "label": "Seasonal permit"
+                },
+                {
+                  "icon": "Sun",
+                  "label": "Extreme heat"
+                },
+                {
+                  "icon": "Radar",
+                  "label": "Crowded airspace"
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -119,46 +233,65 @@
       "title": "The business opportunity",
       "beats": [
         {
-          "narration": "Savings rose about twenty two percent where agents were dense.",
-          "visual": {
-            "type": "bars",
-            "title": "Where agents spread",
-            "unit": "%",
-            "items": [
-              {
-                "label": "Savings",
-                "value": 22
-              },
-              {
-                "label": "Consumption (women-led homes)",
-                "value": 18.5
-              }
-            ],
-            "source": "Suri & Jack, 2016"
-          }
+          "narration": "One market report puts delivery drones at five hundred and twenty eight million dollars in 2024, forecast to reach ten and a half billion by 2034.",
+          "shots": [
+            {
+              "kind": "chart",
+              "chart": "bar",
+              "title": "Global delivery drone market",
+              "unit": "B",
+              "points": [
+                {
+                  "label": "2024",
+                  "value": 0.5284
+                },
+                {
+                  "label": "2034 forecast",
+                  "value": 10.5
+                }
+              ],
+              "source": "Terra Drone Arabia report",
+              "prefix": "$"
+            }
+          ]
         },
         {
-          "narration": "Every agent is a small business, and the platform became a payments rail for everything else.",
-          "visual": {
-            "type": "ui",
-            "variant": "dashboard",
-            "app": "Agent dashboard",
-            "lines": [
-              "12 cash-ins today",
-              "8 withdrawals",
-              "Float running low: top up"
-            ],
-            "kpis": [
-              {
-                "label": "Agents",
-                "value": "120,000+"
+          "narration": "Operators win regulated medical contracts, health systems cut delivery times, and cargo drone makers like LODD are building machines that lift two hundred and fifty kilos.",
+          "shots": [
+            {
+              "kind": "network",
+              "center": {
+                "icon": "Drone",
+                "label": "Medical drone logistics"
               },
-              {
-                "label": "Users",
-                "value": "25M+"
-              }
-            ]
-          }
+              "nodes": [
+                {
+                  "icon": "Briefcase",
+                  "label": "Operators"
+                },
+                {
+                  "icon": "Hospital",
+                  "label": "Health systems"
+                },
+                {
+                  "icon": "Factory",
+                  "label": "Drone makers"
+                },
+                {
+                  "icon": "Package",
+                  "label": "Procurement"
+                }
+              ]
+            },
+            {
+              "kind": "counter",
+              "value": 250,
+              "suffix": " kg",
+              "label": "LODD cargo drone payload",
+              "icon": "Package",
+              "at": "two"
+            }
+          ]
         }
       ]
     },
@@ -167,24 +300,53 @@
       "title": "How it is used today",
       "beats": [
         {
-          "narration": "From Nairobi to Mombasa, it now runs everyday life.",
-          "visual": {
-            "type": "map",
-            "region": "Africa",
-            "label": "Kenya",
-            "points": [
-              {
-                "name": "Nairobi",
-                "lat": -1.29,
-                "lon": 36.82
-              },
-              {
-                "name": "Mombasa",
-                "lat": -4.04,
-                "lon": 39.67
-              }
-            ]
-          }
+          "narration": "The first permit went to Terra Drone Arabia, working with the Makkah Health Cluster and NUPCO, after a pilot in June 2025 delivered ice packs to Mina Emergency Hospital.",
+          "shots": [
+            {
+              "kind": "timeline",
+              "items": [
+                {
+                  "year": "2024",
+                  "text": "Two years of trials begin"
+                },
+                {
+                  "year": "2025",
+                  "text": "Hajj pilot: ice packs to Mina"
+                },
+                {
+                  "year": "2026",
+                  "text": "First operational permit"
+                }
+              ]
+            },
+            {
+              "kind": "route",
+              "points": [
+                {
+                  "name": "Masjid al-Haram",
+                  "lat": 21.4225,
+                  "lon": 39.8262
+                },
+                {
+                  "name": "Mina",
+                  "lat": 21.4133,
+                  "lon": 39.8933
+                }
+              ],
+              "mover": "Drone",
+              "compare": [
+                {
+                  "label": "Road",
+                  "value": "90 min"
+                },
+                {
+                  "label": "Drone",
+                  "value": "6 min"
+                }
+              ],
+              "at": "ice"
+            }
+          ]
         }
       ]
     },
@@ -193,22 +355,68 @@
       "title": "What it means for the future",
       "beats": [
         {
-          "narration": "By 2015 there were 270 mobile money services in 93 countries.",
-          "visual": {
-            "type": "ui",
-            "variant": "chat",
-            "app": "Assistant",
-            "lines": [
-              "How many countries use mobile money?",
-              "By 2015: 270 services in 93 countries, about 411 million accounts."
-            ]
-          }
+          "narration": "If permits extend beyond the season, drones could link clinics, labs and hospitals across the Gulf, especially for urgent, cold-chain deliveries.",
+          "shots": [
+            {
+              "kind": "globe",
+              "focus": {
+                "lat": 24,
+                "lon": 48
+              },
+              "region": "GCC",
+              "points": [
+                {
+                  "name": "Makkah",
+                  "lat": 21.42,
+                  "lon": 39.83
+                },
+                {
+                  "name": "Riyadh",
+                  "lat": 24.71,
+                  "lon": 46.68
+                },
+                {
+                  "name": "Dubai",
+                  "lat": 25.2,
+                  "lon": 55.27
+                }
+              ],
+              "arcs": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  2
+                ]
+              ]
+            },
+            {
+              "kind": "steps",
+              "items": [
+                {
+                  "icon": "FlaskConical",
+                  "label": "Lab samples"
+                },
+                {
+                  "icon": "Syringe",
+                  "label": "Urgent medicine"
+                },
+                {
+                  "icon": "HeartPulse",
+                  "label": "Faster emergency care"
+                }
+              ],
+              "at": "especially"
+            }
+          ]
         }
       ]
     }
   ],
   "outro": {
-    "narration": "Technology changes lives when it meets people where they are. For more stories of technology with real impact, visit T and I News.",
-    "line": "Meet people where they are."
+    "narration": "Six minutes beats ninety. Now it has to prove itself beyond Hajj. For more stories of technology with real impact, visit T and I News.",
+    "line": "Six minutes beats ninety. Next: beyond Hajj."
   }
 }

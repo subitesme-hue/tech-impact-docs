@@ -72,7 +72,7 @@ for c in tl['cuts']:
     if c['item'] == 'ident':
         a, b = int(c['t'] * SR), int((c['t'] + 2.6) * SR)
         gain[a:b] = np.maximum(gain[a:b], 0.42 * vo_rms)
-gain[:int(1.4 * SR)] = np.maximum(gain[:int(1.4 * SR)], 0.35 * vo_rms)
+gain[:int(1.0 * SR)] = np.maximum(gain[:int(1.0 * SR)], 0.3 * vo_rms)
 fo = int(3 * SR)
 gain[-fo:] *= np.linspace(1, 0, fo)
 music *= gain[:, None]
@@ -82,13 +82,12 @@ sfx = np.zeros((TOTAL, 2), dtype='float32')
 wh = load(os.path.join(ROOT, 'public', 'sfx', 'whoosh.wav'))
 hit = load(os.path.join(ROOT, 'public', 'sfx', 'hit.wav'))
 wh /= max(1e-6, np.abs(wh).max()); hit /= max(1e-6, np.abs(hit).max())
-for c in tl['cuts']:
-    if c['kind'] == 'cut':
+for c in tl['cuts']:  # only a soft swoosh when a new section begins; ordinary cuts are clean hard cuts
+    if c['kind'] != 'section':
         continue
-    s = wh if c['kind'] in ('zoom', 'glitch', 'burn') else hit
-    i = max(0, int((c['t'] - 0.25) * SR))
-    j = min(TOTAL, i + len(s))
-    sfx[i:j] += s[:j - i] * 0.12
+    i = max(0, int((c['t'] - 0.3) * SR))
+    j = min(TOTAL, i + len(wh))
+    sfx[i:j] += wh[:j - i] * 0.06
 
 mix = vo + music + sfx
 mix /= max(1.0, np.abs(mix).max() / 0.95)

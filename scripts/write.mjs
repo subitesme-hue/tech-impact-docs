@@ -91,52 +91,64 @@ English only.`;
 if (!res) throw new Error('No well-sourced trending story found after 3 tries.');
 fs.writeFileSync('research.json', JSON.stringify(res, null, 2));
 
-// ---------------------------------------------------------------- script
+// ---------------------------------------------------------------- script (V3: animated documentary, cut on spoken words)
+import {createRequire} from 'node:module';
+const ICONS = new Set(Object.keys(createRequire(import.meta.url)('lucide-react').icons || {}).map((k) => k));
+const iconOk = (n) => typeof n === 'string' && (ICONS.has(n) || ICONS.has(n.replace(/Icon$/, '')));
 const words = (x) => String(x || '').split(/\s+/).filter(Boolean).length;
 const cut = (x, n) => String(x || '').trim().slice(0, n);
-const TYPES = ['footage', 'photo3d', 'multiframe', 'stat', 'bars', 'map', 'newspaper', 'timeline', 'split', 'cards', 'filmstrip', 'ui', 'device', 'agenda'];
+const KINDS = ['globe', 'route', 'flow', 'counter', 'compare', 'units', 'chart', 'steps', 'network', 'icons', 'timeline', 'kinetic', 'device', 'footage', 'agenda'];
+const EXAMPLE = {kind: 'summary', title: 'In this episode', beats: [
+  {narration: 'Ninety minutes by road. Six minutes by air. In one of the biggest crowds on Earth, Saudi Arabia has just licensed drones to carry medicine.',
+    shots: [{kind: 'kinetic', text: 'Ninety minutes by road', emphasis: 'ninety'}, {kind: 'kinetic', text: 'Six minutes by air', emphasis: 'six', at: 'Six'},
+      {kind: 'globe', focus: {lat: 21.4, lon: 39.9}, region: 'GCC', points: [{name: 'Mina', lat: 21.41, lon: 39.89}], label: 'Makkah, Saudi Arabia', at: 'In one'},
+      {kind: 'footage', query: 'delivery drone flying over city', at: 'licensed'}]},
+  {narration: 'Today: how medical drones work, the problem they solve, what holds them back, where the money is, who flies them now, and what comes next.', shots: [{kind: 'agenda'}]}]};
 let final = null, prevProblems = [];
 for (let run = 0; run < 3 && !final; run++) {
-  const system = `You are an independent documentary maker: a seasoned executive producer, a techpreneur and a tech journalist. You make "T&I Tech Impact", a fast, smart 2:30-3:30 minute episode about one trending technology, for founders, executives, investors and curious viewers.
+  const system = `You are an independent documentary maker with the instincts of a top executive producer, a techpreneur and a tech journalist. You make "T&I Tech Impact": 2:30-3:30 minute animated documentary episodes (the feel of a Nat Geo / Vox explainer) about one trending technology. The goal: educate and entertain founders, executives and curious viewers so they subscribe and visit tai.news.
 
-VOICE: a confident presenter talking straight to the viewer, like a great tech podcast or explainer channel: punchy, specific, curious, a little opinionated, never dull. Short sentences. Concrete names, places, numbers. No filler, no clichés, no hype words (delve, tapestry, testament, landscape, realm, unlock, harness, leverage, revolutionize, game-changer, seamless, cutting-edge, synergy, ever-evolving, imagine a world, in today's world). It must not sound AI-generated.
+HOW THESE FILMS WORK (follow exactly):
+- The narration is the spine. The picture changes on the words: a new shot every 7-12 spoken words (about every 2.5-4 seconds). Every shot must literally show what is being said at that moment.
+- Shots are animated diagrams in one consistent style, with real footage only as an occasional accent. Hard cuts only.
+- Storytelling: start with tension, then explain, then complicate (challenges), then reward (opportunity), then proof (who uses it now), then meaning (future). Every sentence earns its place. Concrete names, places, numbers. Confident, warm presenter voice. Short sentences. No filler. No hype words (delve, tapestry, testament, landscape, realm, unlock, harness, leverage, revolutionize, game-changer, seamless, cutting-edge, synergy, imagine a world).
 
-TRUTH: use ONLY the research. Every number, name and date must come from it. Forecasts must be said as forecasts. Never invent quotes, people or data.
+TRUTH: use ONLY the research. Every number, name, date must come from it. Forecasts said as forecasts.
 
-STRUCTURE — "segments" is exactly 7 items in this order:
-0) {"kind":"summary","title":"In this episode","beats":[B1,B2]}: the podcast-style opening, about 30 seconds: 75-90 words in total.
-   B1 = the hook: two or three sentences with the most surprising fact or tension (visual: footage, photo3d or multiframe).
-   B2 = the episode overview spoken to the viewer, e.g. "Today we look at X: the problem it solves, what is holding it back, where the money is, who is using it right now, and what it means for the rest of us." Visual MUST be {"type":"agenda"}.
-1..6) {"kind":"chapter","title":T,"beats":[2-3 beats]} with these section titles in this order (you may sharpen the wording, keep the meaning):
-   ${SECTIONS.map((s, i) => `${i + 1}. ${s}`).join('\n   ')}
-- Each beat: {"narration": 1-2 sentences, 10-34 words, "visual": {...}}.
-- Total narration across all beats + outro: 440-520 words.
-- "outro": {"narration": 14-24 words, ending exactly "For more stories of technology with real impact, visit T and I News.", "line": closing thought, max 80 chars}.
+STRUCTURE — "segments": exactly 7, in order:
+0) the intro, {"kind":"summary","title":"In this episode","beats":[B1,B2]}, about 30 seconds, 72-88 words: B1 = the hook (2-3 sentences, the most surprising tension, 3-4 shots); B2 = the presenter tells the viewer what this episode covers, naming all six parts naturally (one shot: {"kind":"agenda"}).
+1..6) {"kind":"chapter","title":T,"beats":[2-3 beats]} with titles: ${SECTIONS.join(' | ')} (you may sharpen wording, keep meaning and order).
+- beat = {"narration": 1-2 sentences, 12-34 words, "shots": [...]}. Number of shots in a beat = about one per 9 words (so 2-4). Every shot after the first has "at": the exact first 1-2 words of the narration where that shot starts (copied from the narration).
+- Total narration (all beats + outro): 440-520 words.
+- "outro": {"narration": 14-24 words ending exactly "For more stories of technology with real impact, visit T and I News.", "line": closing thought, max 70 chars}.
 
-VISUALS (one per beat; vary them; never the same type twice in a row except footage). Graphics carry the story; real footage only where the camera can literally show it.
-- {"type":"ui","variant":"chat"|"dashboard"|"list"|"notify","app":window title max 28 chars,"lines":[2-4 short lines, max 64 chars],"kpis"?:[2-3 {"label":max 22,"value":string from the facts}]}
-  = an on-screen EXAMPLE of the tech in use: what a user, operator or customer sees (a chat with an assistant, a dashboard, a checklist, a phone notification). Lines are illustrative examples consistent with the research; KPI values must come from the facts.
-- {"type":"device","kind":"laptop"|"phone","query":Q}  = real footage shown inside a laptop or phone mockup.
-- {"type":"stat","value":number,"prefix"?:"$","suffix"?:"%"|"+"|"B"|"M"|...,"decimals"?:0-1,"label":max 56 chars,"source":"Org, year","query":Q}
-- {"type":"bars","title":max 40,"unit"?:string,"items":[2-4 {"label":max 36,"value":number}],"source":"Org, year"}
-- {"type":"map","region":"${t.region}","label":place,"points":[1-4 {"name","lat","lon"}]}  (best in "How it is used today")
-- {"type":"cards","heading":max 34,"items":[3 x max 24 chars]}   (great for challenges / opportunities)
-- {"type":"split","heading":max 34,"bullets":[3 x max 58 chars],"query":Q}
-- {"type":"timeline","items":[3-5 {"year","text":max 56}]}
-- {"type":"newspaper","headline":max 58 (your words),"deck":max 76,"dateline":"Place · Year","query":Q}
-- {"type":"footage","query":Q} / {"type":"photo3d","query":Q,"title"?:max 36} / {"type":"multiframe","queries":[Q,Q,Q],"word"?:1-2 words} / {"type":"filmstrip","queries":[Q,Q,Q],"caption":max 36}
-Required: >=3 ui or device, >=2 stat or bars, >=1 cards or split, at most 5 footage/photo3d/multiframe beats in total.
-Q = a stock-footage search a camera could literally film: 3-6 concrete words (subject + action + setting), e.g. "engineer inspecting server racks data center", "doctor using tablet hospital ward", "delivery drone flying over village". Never brand names, never abstract ideas, never text.
+SHOT KINDS (I = an icon name from the Lucide icon set, PascalCase, e.g. Drone, Hospital, Pill, Truck, Factory, Building2, Users, Smartphone, Laptop, Server, Cpu, Bot, BrainCircuit, Satellite, Wifi, Sun, Wind, Battery, Leaf, Wheat, Droplets, Banknote, Coins, TrendingUp, ShieldCheck, Lock, Scale, FileText, Clock, Thermometer, Activity, HeartPulse, Syringe, FlaskConical, GraduationCap, School, Car, Bus, Ship, Plane, Package, Warehouse, Store, ShoppingCart, Handshake, Briefcase, Globe, MapPin, Rocket, Lightbulb, Zap, Recycle, Radar, Gauge, Hourglass, Construction, Cable, Network, Fingerprint, QrCode):
+- {"kind":"globe","focus":{"lat","lon"},"region"?:region name,"points"?:[1-4 {"name","lat","lon"}],"arcs"?:[[0,1]],"label"?:max 40}   where in the world
+- {"kind":"route","points":[2-4 {"name","lat","lon"}],"mover":I,"compare"?:[2 {"label":max 12,"value":max 8}],"label"?:max 34}   movement from A to B on a map
+- {"kind":"flow","nodes":[2-4 {"icon":I,"label":max 22}],"mover":I,"label"?:max 34}   how it works, step to step
+- {"kind":"counter","value":number,"from"?:number,"prefix"?:"$","suffix"?:"%"|"+"|" kg"|"B"|"M"...,"decimals"?:0-1,"label":max 52,"icon"?:I,"source"?:"Org, year"}   one big number
+- {"kind":"compare","title"?:max 40,"left":{"icon":I,"label":max 26,"value":max 8},"right":{"icon":I,"label":max 26,"value":max 8}}   before/after, A vs B
+- {"kind":"units","total":10|20|50|100,"highlight":number,"icon":I,"label":max 52}   "1 in 5", percentages
+- {"kind":"chart","chart":"line"|"bar","title":max 40,"prefix"?:"$","unit"?:"B"|"%"|"M"|...,"points":[2-6 {"label":max 14,"value":number}],"source"?:"Org, year"}   trends over time
+- {"kind":"steps","items":[3-4 {"icon":I,"label":max 22}]}   a process or rollout
+- {"kind":"network","center":{"icon":I,"label":max 26},"nodes":[3-6 {"icon":I,"label":max 20}]}   ecosystem, who benefits
+- {"kind":"icons","title"?:max 30,"items":[2-4 {"icon":I,"label":max 22}]}   a short list (challenges, features)
+- {"kind":"timeline","items":[3-5 {"year","text":max 40}]}   history
+- {"kind":"kinetic","text":max 7 words,"emphasis"?:1 word}   a punchline said on screen (max 3 per episode)
+- {"kind":"device","device":"phone"|"laptop","app":max 24,"lines":[2-3 x max 48]}   an EXAMPLE of the screen a user sees (max 2 per episode)
+- {"kind":"footage","query":3-6 concrete filmable words,"label"?:place or context max 26}   real stock footage accent (max 4 per episode)
+- {"kind":"agenda"}   only in the intro
+Variety rules: never the same kind twice in a row; any kind at most 5 times (kinetic 3, device 2, footage 4); use at least 9 different kinds. Numbers in counter/compare/units/chart must come from the facts.
 
-THUMBNAIL "thumb": {"kicker":"${t.region} · <the tech>", "headline": 5-9 words, a sharp curiosity hook with a real number or outcome, "highlight": 1-3 consecutive words copied from the headline, "query": a striking literal photo query}
-"title": 3-7 words.
+EXAMPLE of the intro written correctly (different topic, do not copy): ${JSON.stringify(EXAMPLE)}
 
+THUMBNAIL "thumb": {"kicker":"<Country or region> · <the tech>", "headline": 5-9 words with a real number or outcome, "highlight": 1-3 words copied from the headline, "query": a striking literal photo query, "focus": {"lat","lon"} of the main place}
+"title": 3-6 words.
 SOCIAL "post": "youtube_title" (max 90, truthful curiosity + keyword), "youtube_description" (2 short paragraphs, max 700 chars), "youtube_tags" (8-15), "linkedin" (120-200 words: insight-led opening, 3 takeaways incl. the business opportunity, a question, then "Watch the full episode: https://tai.news" and 3-5 hashtags), "facebook" (60-110 words, ends "Full episode on T&I News: https://tai.news" + 3 hashtags), "x" (max 200 chars, no emojis, no links, 1-2 hashtags).
-
 Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
   let user = `Region: ${t.region}\nResearch (the only facts you may use):\n${JSON.stringify(res.research)}`;
   if (prevProblems.length) user += `\n\nYour previous draft was rejected for: ${prevProblems.join('; ')}. Fix all of these.`;
-  const d = await chat({model: cfg.script_model, response_format: {type: 'json_object'}, temperature: 0.7, max_tokens: 16000, reasoning: {effort: 'low'},
+  const d = await chat({model: cfg.script_model, response_format: {type: 'json_object'}, temperature: 0.7, max_tokens: 20000, reasoning: {effort: 'low'},
     messages: [{role: 'system', content: system}, {role: 'user', content: user}]});
   const {json: s} = reply(d, `script-${run + 1}`);
 
@@ -144,50 +156,61 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
   const segs = Array.isArray(s.segments) ? s.segments : [];
   if (segs.length !== 7) problems.push(`need 7 segments (intro + 6 sections), got ${segs.length}`);
   if (segs[0] && segs[0].kind !== 'summary') problems.push('segments[0] must be the intro (kind summary)');
-  if (segs[0] && !(segs[0].beats || []).some((b) => b.visual?.type === 'agenda')) problems.push('intro needs an agenda beat');
   const beats = segs.flatMap((g) => (Array.isArray(g.beats) ? g.beats : []));
   const introWords = (segs[0]?.beats || []).reduce((a, b) => a + words(b.narration), 0);
   const total = beats.reduce((a, b) => a + words(b.narration), 0) + words(s.outro?.narration);
-  if (introWords < 68 || introWords > 98) problems.push(`intro is ${introWords} words (need 75-90)`);
+  if (introWords < 62 || introWords > 98) problems.push(`intro is ${introWords} words (need 72-88)`);
   if (total < 410 || total > 550) problems.push(`total narration is ${total} words (need 440-520)`);
   const researchText = JSON.stringify(res.research).replace(/,/g, '');
-  const numOk = (v) => { const n = Number(v); if (!isFinite(n)) return false; return [String(n), n.toFixed(1), String(Math.round(n))].some((f) => researchText.includes(f)); };
+  const numOk = (v) => { const n = Number(v); if (!isFinite(n)) return false; return [String(n), n.toFixed(1), String(Math.round(n)), String(n * 1000), String(n / 1000)].some((f) => researchText.includes(f)); };
   const count = {};
-  let prevType = '';
-  beats.forEach((b, i) => {
-    const v = b.visual || {};
-    if (!TYPES.includes(v.type)) { problems.push(`beat ${i + 1}: unknown visual "${v.type}"`); return; }
-    count[v.type] = (count[v.type] || 0) + 1;
-    if (v.type === prevType && v.type !== 'footage') problems.push(`beat ${i + 1}: same visual twice in a row (${v.type})`);
-    prevType = v.type;
+  let prev = '', nShots = 0;
+  const icons = [];
+  beats.forEach((b, bi) => {
+    const shots = Array.isArray(b.shots) ? b.shots : [];
+    if (!shots.length) { problems.push(`beat ${bi + 1}: no shots`); return; }
     const w = words(b.narration);
-    if (w < 6 || w > 42) problems.push(`beat ${i + 1}: narration ${w} words`);
-    const q = (x) => typeof x === 'string' && x.trim().split(/\s+/).length >= 3;
-    if (['footage', 'photo3d', 'newspaper', 'split', 'device'].includes(v.type) && !q(v.query)) problems.push(`beat ${i + 1}: stock query needs 3+ concrete words`);
-    if (['multiframe', 'filmstrip'].includes(v.type) && !(Array.isArray(v.queries) && v.queries.length >= 3 && v.queries.every(q))) problems.push(`beat ${i + 1}: needs 3 queries of 3+ words`);
-    if (v.type === 'stat' && !numOk(v.value)) problems.push(`beat ${i + 1}: stat ${v.value} not in research`);
-    if (v.type === 'bars') (v.items || []).forEach((it) => { if (!numOk(it.value)) problems.push(`beat ${i + 1}: bar ${it.value} not in research`); });
-    if (v.type === 'map' && !(v.points || []).every((p) => isFinite(p.lat) && isFinite(p.lon))) problems.push(`beat ${i + 1}: map points need lat/lon`);
-    if (v.type === 'ui' && !(Array.isArray(v.lines) && v.lines.length >= 2)) problems.push(`beat ${i + 1}: ui needs 2-4 lines`);
-    if (v.type === 'ui') (v.kpis || []).forEach((k) => { const n = parseFloat(String(k.value).replace(/[^0-9.]/g, '')); if (isFinite(n) && !numOk(n)) problems.push(`beat ${i + 1}: ui kpi ${k.value} not in research`); });
+    if (w < 6 || w > 42) problems.push(`beat ${bi + 1}: narration ${w} words`);
+    if (shots[0].kind !== 'agenda' && w / shots.length > 13) problems.push(`beat ${bi + 1}: ${w} words but only ${shots.length} shots (need a new shot every 7-12 words)`);
+    shots.forEach((sh, si) => {
+      nShots++;
+      if (!KINDS.includes(sh.kind)) { problems.push(`beat ${bi + 1} shot ${si + 1}: unknown kind "${sh.kind}"`); return; }
+      count[sh.kind] = (count[sh.kind] || 0) + 1;
+      if (sh.kind === prev) problems.push(`beat ${bi + 1} shot ${si + 1}: same kind twice in a row (${sh.kind})`);
+      prev = sh.kind;
+      if (si > 0) {
+        const cue = String(sh.at || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ')[0];
+        if (!cue || !String(b.narration).toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).includes(cue)) problems.push(`beat ${bi + 1} shot ${si + 1}: "at" cue "${sh.at}" is not a word in the narration`);
+      }
+      const collect = (x) => { if (x && x.icon !== undefined) icons.push(x.icon); };
+      ['nodes', 'items'].forEach((k) => (sh[k] || []).forEach(collect));
+      collect(sh.center); collect(sh.left); collect(sh.right);
+      if (sh.mover) icons.push(sh.mover);
+      if (sh.kind === 'counter' && !numOk(sh.value)) problems.push(`counter ${sh.value} not in research`);
+      if (sh.kind === 'chart') (sh.points || []).forEach((p) => { if (!numOk(p.value)) problems.push(`chart value ${p.value} not in research`); });
+      if (sh.kind === 'units' && !(isFinite(sh.highlight) && isFinite(sh.total))) problems.push('units needs total and highlight');
+      if ((sh.kind === 'globe' && !(sh.focus && isFinite(sh.focus.lat))) || (sh.kind === 'route' && !(sh.points || []).every((p) => isFinite(p.lat) && isFinite(p.lon)))) problems.push(`${sh.kind}: needs real lat/lon`);
+      if (sh.kind === 'footage' && String(sh.query || '').split(/\s+/).length < 3) problems.push('footage query needs 3+ concrete words');
+    });
   });
-  if ((count.ui || 0) + (count.device || 0) < 3) problems.push('need at least 3 ui/device example scenes');
-  if ((count.stat || 0) + (count.bars || 0) < 2) problems.push('need at least 2 stat/bars scenes');
-  if ((count.footage || 0) + (count.photo3d || 0) + (count.multiframe || 0) > 6) problems.push('too many stock-footage beats (max 5)');
+  const bad = icons.filter((n) => !iconOk(n));
+  if (bad.length) problems.push(`unknown icon names: ${[...new Set(bad)].slice(0, 8).join(', ')} (use Lucide PascalCase names)`);
+  const caps = {kinetic: 3, device: 2, footage: 4, agenda: 1};
+  Object.entries(count).forEach(([k, n]) => { if (n > (caps[k] || 5)) problems.push(`${k} used ${n} times (max ${caps[k] || 5})`); });
+  if (Object.keys(count).length < 9) problems.push(`only ${Object.keys(count).length} different shot kinds (need 9+)`);
+  if (!count.agenda) problems.push('intro needs an agenda shot');
   if (!s.thumb || words(s.thumb.headline) < 4) problems.push('thumbnail headline missing');
   const banned = /\b(delve|tapestry|testament|realm|unlock|harness|leverage|revolutioni[sz]e|game-changer|seamless|cutting-edge|synergy|ever-evolving)\b/i;
   beats.forEach((b, i) => { if (banned.test(b.narration)) problems.push(`beat ${i + 1}: banned word`); });
-  // agenda board items = the six section titles, in order
-  segs.forEach((g) => (g.beats || []).forEach((b) => { if (b.visual?.type === 'agenda') b.visual.items = segs.slice(1).map((x) => cut(x.title, 40)); }));
 
   const p = s.post || {};
   const srcLines = (res.research.sources || []).slice(0, 6).map((x) => `- ${x.title}: ${x.url}`).join('\n');
-  const ytDesc = `${cut(p.youtube_description, 900)}\n\nSources:\n${srcLines}\n\nStock footage and photos: Pexels and Pixabay contributors.\nMore episodes and news: https://tai.news\n\n#TechImpact #TandINews`;
+  const ytDesc = `${cut(p.youtube_description, 900)}\n\nSources:\n${srcLines}\n\nStock footage: Pexels and Pixabay contributors.\nMore episodes and news: https://tai.news\n\n#TechImpact #TandINews`;
   const props = {
     id: t.tag, date: t.date, look: t.look, voice: t.voice, region: t.region, sector: res.sector, tech: cut(res.research.tech, 60),
     title: cut(s.title, 70), thumb: s.thumb || {}, segments: segs,
     outro: s.outro || {narration: 'For more stories of technology with real impact, visit T and I News.'},
-    captions_on: false, sources: res.research.sources || [],
+    sources: res.research.sources || [],
     post: {
       post_at: t.post_at,
       main: {
@@ -204,7 +227,7 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
         reply_prefix: 'Watch the full episode:'},
     },
   };
-  console.log(`draft ${run + 1}: ${total} words, intro ${introWords}`, problems.length ? 'REJECTED: ' + problems.join('; ') : 'OK');
+  console.log(`draft ${run + 1}: ${total} words, intro ${introWords}, ${nShots} shots, ${Object.keys(count).length} kinds`, problems.length ? 'REJECTED: ' + problems.join('; ') : 'OK');
   if (!problems.length) final = props; else prevProblems = problems;
 }
 if (!final) throw new Error('Script rejected after 3 drafts: ' + prevProblems.join('; '));

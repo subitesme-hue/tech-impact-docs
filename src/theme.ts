@@ -30,43 +30,21 @@ export type Look = {
   grade: string; // CSS filter applied to footage
   wash?: string; // optional colour wash over footage (multiframe reference)
   grain: number; // 0..1 film grain strength
-  transitions: ('zoom' | 'glitch' | 'burn' | 'flash')[];
+  transitions: string[];
   headlineFont: string;
 };
 
+// One look per episode (rotates daily). Every shot inside an episode uses the same palette and grade,
+// like a single documentary series — no look changes mid-film.
 export const LOOKS: Look[] = [
-  {
-    // "Noir documentary": vintage-documentary reference — gold on near-black, film burns
-    name: 'noir',
-    bg: '#07090f', panel: 'rgba(14,18,30,0.78)', ink: '#f5f1e8', dim: '#a9a69c',
-    accent: '#d4a64a', accent2: '#f0d48a',
-    grade: 'contrast(1.12) saturate(0.78) brightness(0.92) sepia(0.12)',
-    grain: 0.55, transitions: ['burn', 'zoom', 'flash', 'burn'], headlineFont: DISPLAY,
-  },
-  {
-    // "Signal": AI motion UI kit reference — indigo glass, electric blue/violet glow, glitch cuts
-    name: 'signal',
-    bg: '#0a0820', panel: 'rgba(30,26,80,0.62)', ink: '#eef0ff', dim: '#9aa0d6',
-    accent: '#6f7dff', accent2: '#4fd8ff',
-    grade: 'contrast(1.08) saturate(1.05) brightness(0.9) hue-rotate(-6deg)',
-    grain: 0.25, transitions: ['glitch', 'zoom', 'glitch', 'flash'], headlineFont: SANS,
-  },
-  {
-    // "Urban": multiframe/abenton reference — warm wash, rounded panels, clean white type
-    name: 'urban',
-    bg: '#120b0a', panel: 'rgba(30,18,16,0.7)', ink: '#ffffff', dim: '#e2c9bd',
-    accent: '#ff6b4a', accent2: '#ffc29a',
-    grade: 'contrast(1.06) saturate(1.1) brightness(0.95)', wash: 'rgba(160,40,20,0.18)',
-    grain: 0.3, transitions: ['zoom', 'flash', 'zoom', 'glitch'], headlineFont: DISPLAY,
-  },
-  {
-    // "Field report": tech-show/newspaper reference — teal + ivory, crisp, power zooms
-    name: 'field',
-    bg: '#06110f', panel: 'rgba(8,30,28,0.72)', ink: '#f4fbf8', dim: '#9cc4bb',
-    accent: '#2ec4a6', accent2: '#e9d8a6',
-    grade: 'contrast(1.1) saturate(0.95) brightness(0.93)',
-    grain: 0.35, transitions: ['zoom', 'burn', 'glitch', 'zoom'], headlineFont: SANS,
-  },
+  {name: 'amber', bg: '#060b16', panel: '#13213a', ink: '#f4f1ea', dim: '#93a0b8', accent: '#f2b33d', accent2: '#ffd98a',
+    grade: 'contrast(1.08) saturate(0.95) brightness(0.92)', grain: 0.2, transitions: [], headlineFont: DISPLAY},
+  {name: 'teal', bg: '#05100f', panel: '#0f2a2a', ink: '#f1f7f5', dim: '#8fb3ad', accent: '#35d0b4', accent2: '#a8f0e0',
+    grade: 'contrast(1.08) saturate(0.9) brightness(0.92)', grain: 0.2, transitions: [], headlineFont: DISPLAY},
+  {name: 'coral', bg: '#0d0910', panel: '#26182a', ink: '#f7f0f2', dim: '#b39aa8', accent: '#ff7a59', accent2: '#ffc0a8',
+    grade: 'contrast(1.08) saturate(0.95) brightness(0.92)', grain: 0.2, transitions: [], headlineFont: DISPLAY},
+  {name: 'azure', bg: '#050a14', panel: '#102341', ink: '#eef3fb', dim: '#8ea2c2', accent: '#4ea8ff', accent2: '#bde0ff',
+    grade: 'contrast(1.08) saturate(0.92) brightness(0.92)', grain: 0.2, transitions: [], headlineFont: DISPLAY},
 ];
 
 export const lookOf = (i: number) => LOOKS[((i % LOOKS.length) + LOOKS.length) % LOOKS.length];

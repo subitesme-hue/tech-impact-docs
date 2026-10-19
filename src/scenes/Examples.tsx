@@ -7,14 +7,11 @@ import {MediaLayer, ease} from '../components/Layers';
 type P = {look: Look; seed: number; dur: number};
 
 // Soft moving gradient backdrop (the "product demo on a gradient" look from the Claude explainer reference).
-export const Gradient: React.FC<{look: Look; seed: number}> = ({look, seed}) => {
-  const f = useCurrentFrame();
-  const a = 30 + 20 * Math.sin(f / 90 + seed), b = 70 + 15 * Math.cos(f / 110 + seed);
-  return (
-    <AbsoluteFill style={{background: `radial-gradient(circle at ${a}% ${b}%, ${look.accent}cc 0%, transparent 55%),
-      radial-gradient(circle at ${100 - a}% ${100 - b}%, ${look.accent2}99 0%, transparent 50%), ${look.bg}`}} />
-  );
-};
+export const Gradient: React.FC<{look: Look; seed: number}> = ({look}) => (
+  <AbsoluteFill style={{background: `radial-gradient(ellipse at 50% 45%, ${look.panel} 0%, ${look.bg} 72%)`}}>
+    <AbsoluteFill style={{backgroundImage: 'radial-gradient(rgba(255,255,255,0.09) 1.2px, transparent 1.2px)', backgroundSize: '42px 42px'}} />
+  </AbsoluteFill>
+);
 
 const typed = (text: string, f: number, start: number, cps = 1.6) => {
   const n = Math.max(0, Math.floor((f - start) * cps));

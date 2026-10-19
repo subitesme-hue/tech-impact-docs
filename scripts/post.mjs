@@ -46,8 +46,8 @@ if (post.post_at) {
 const yt = post.main?.platform_content?.youtube;
 if (yt && props.timeline) {
   const ts = (f) => { const s = Math.floor(f / props.timeline.fps); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
-  const lines = ['0:00 In this film'];
-  props.timeline.items.filter((i) => i.chapterStart).forEach((i) => lines.push(`${ts(i.start)} ${props.segments[i.seg].title}`));
+  const lines = ['0:00 In this episode'];
+  props.timeline.items.filter((i) => i.sectionStart || i.chapterStart).forEach((i) => lines.push(`${ts(i.start)} ${props.segments[i.seg].title}`));
   const block = `Chapters\n${lines.join('\n')}\n\n`;
   yt.content = yt.content.includes('Sources:') ? yt.content.replace('Sources:', block + 'Sources:') : yt.content + '\n\n' + block;
 }
