@@ -82,6 +82,22 @@ jobs:
           if [ -n "$LOGO_URL" ] && [ ! -f public/logo.png ]; then curl -sSLf -o public/logo.png "$LOGO_URL" || rm -f public/logo.png; fi
           ls -la public/logo.png 2>/dev/null || echo "no logo file: using the typographic T&I NEWS mark"
 
+      - name: Check API keys (before spending any credits)
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+        run: |
+          mkdir -p out/logs
+          code() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
+          OR=$(code -H "Authorization: Bearer $OPENROUTER_API_KEY" https://openrouter.ai/api/v1/key)
+          PX=$( [ -n "$PEXELS_API_KEY" ] && code -H "Authorization: $PEXELS_API_KEY" "https://api.pexels.com/v1/search?query=city&per_page=1" || echo missing)
+          PB=$( [ -n "$PIXABAY_API_KEY" ] && code "https://pixabay.com/api/?key=$PIXABAY_API_KEY&q=city&per_page=3" || echo missing)
+          echo "OpenRouter=$OR Pexels=$PX Pixabay=$PB (200 = OK)" | tee out/logs/keys.log
+          # OpenRouter is required (research + script). Stock keys are optional: graphics cover for them.
+          # Stop only on a definite rejection (401/403); any other code is logged and the run continues.
+          case "$OR" in 401|403) { echo "OPENROUTER_API_KEY rejected ($OR) - fix the secret; stopping before any paid call." | tee -a out/logs/keys.log; exit 1; } ;; esac
+
       - name: Research and write the script
         if: ${{ inputs.topic != '' }}
         env:
