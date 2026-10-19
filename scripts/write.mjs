@@ -11,7 +11,7 @@ if (!KEY) throw new Error('Add the OPENROUTER_API_KEY secret in GitHub (Settings
 const cfg = { research_model: t.research_model || 'anthropic/claude-sonnet-5.5', script_model: t.script_model || 'anthropic/claude-sonnet-5.5',
   accounts: t.accounts || { facebook: 7748, linkedin: 9116, youtube: 7751, x: 7747 }, post_enabled: !!t.post_enabled };
 try {
-  t.recent_titles = JSON.parse(execSync(`gh api "repos/${process.env.GITHUB_REPOSITORY}/releases?per_page=100"`, {encoding: 'utf8'})).map((r) => r.name).filter(Boolean);
+  t.recent_titles = JSON.parse(execSync(`gh api "repos/${process.env.GITHUB_REPOSITORY}/releases?per_page=100"`, {encoding: 'utf8'})).map((r) => r.name).filter((n) => n && !n.startsWith('DIAG'));
 } catch (e) { t.recent_titles = t.recent_titles || []; }
 console.log(`topic: ${t.region} / ${t.sector} | avoid ${t.recent_titles.length} past titles`);
 
@@ -57,7 +57,7 @@ Return ONLY JSON:
  "global_relevance": string (why this matters beyond ${t.region}),
  "sources": [{"title": string, "url": string}] (3-8)}
 English only.`;
-  const d = await chat({ model: cfg.research_model, plugins: [{ id: 'web', max_results: 10 }], response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 5000,
+  const d = await chat({ model: cfg.research_model, plugins: [{ id: 'web', max_results: 10 }], response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 9000, reasoning: { max_tokens: 2000 },
     messages: [{ role: 'system', content: system }, { role: 'user', content: `Region: ${t.region}\nSector: ${sector}\nToday: ${t.date}` }] });
   const msg = d.choices?.[0]?.message || {};
   const r = parseJson(msg.content);
@@ -126,7 +126,7 @@ SOCIAL POSTS ("post"):
 Return ONLY JSON: {"title","thumb","segments","outro","post"}. English only.`;
   let user = `Region: ${t.region}\nSector: ${res.sector}\nResearch (the only facts you may use):\n${JSON.stringify(res.research)}`;
   if (prevProblems.length) user += `\n\nYour previous draft was rejected for: ${prevProblems.join('; ')}. Fix all of these.`;
-  const d = await chat({ model: cfg.script_model, response_format: { type: 'json_object' }, temperature: 0.6, max_tokens: 12000,
+  const d = await chat({ model: cfg.script_model, response_format: { type: 'json_object' }, temperature: 0.6, max_tokens: 16000, reasoning: { max_tokens: 2000 },
     messages: [{ role: 'system', content: system }, { role: 'user', content: user }] });
   const ch = d.choices?.[0] || {};
   const rawText = String(ch.message?.content || '');
