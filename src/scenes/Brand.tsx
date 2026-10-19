@@ -50,8 +50,19 @@ export const Thumb: React.FC<{p: DocProps; look: Look; dur: number}> = ({p, look
 };
 
 // Chapter card over the first shot of each chapter (glitch flicker, big outline number).
-export const ChapterCard: React.FC<{n: number; title: string; look: Look}> = ({n, title, look}) => {
+export const ChapterCard: React.FC<{n: number; title: string; look: Look; full?: boolean}> = ({n, title, look, full}) => {
   const f = useCurrentFrame();
+  if (full) {
+    const inn = ease(f, 0, 10);
+    return (
+      <AbsoluteFill style={{background: `radial-gradient(ellipse at 30% 60%, ${look.accent}55 0%, ${look.bg} 65%)`}}>
+        <div style={{position: 'absolute', left: 140, top: 330, fontFamily: DISPLAY, fontWeight: 700, fontSize: 220, lineHeight: 1, color: 'transparent',
+          WebkitTextStroke: `3px ${look.accent}`, opacity: inn, transform: `translateX(${(1 - inn) * -30}px)`}}>{String(n).padStart(2, '0')}</div>
+        <div style={{position: 'absolute', left: 146, top: 590, width: 1500, fontFamily: DISPLAY, fontWeight: 700, fontSize: 96, lineHeight: 1.02,
+          color: look.ink, textTransform: 'uppercase', opacity: ease(f, 4, 14), transform: `translateY(${(1 - ease(f, 4, 16)) * 20}px)`}}>{title}</div>
+      </AbsoluteFill>
+    );
+  }
   const inn = ease(f, 0, 12), out = interpolate(f, [62, 76], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   const flick = f < 10 && rand(f * 31) > 0.5 ? 0.4 : 1;
   if (f > 78) return null;
@@ -96,7 +107,7 @@ export const Ident: React.FC<{p: DocProps; look: Look; medias: (Media | undefine
       <AbsoluteFill style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: reveal,
         background: `rgba(0,0,0,${0.72 * reveal})`}}>
         <Logo look={look} hasLogo={(p as any).has_logo} size={1.4} />
-        <div style={{fontFamily: MONO, fontSize: 26, letterSpacing: 10, color: look.accent2, marginTop: 26}}>TECH IMPACT · DOCUMENTARY</div>
+        <div style={{fontFamily: MONO, fontSize: 26, letterSpacing: 10, color: look.accent2, marginTop: 26}}>TECH IMPACT</div>
         <div style={{fontFamily: DISPLAY, fontWeight: 700, fontSize: 96, color: look.ink, textTransform: 'uppercase', marginTop: 20,
           textAlign: 'center', maxWidth: 1600, lineHeight: 1.02}}>{p.title}</div>
       </AbsoluteFill>

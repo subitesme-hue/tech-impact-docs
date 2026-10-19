@@ -1,10 +1,11 @@
-"""Find and prepare real stock footage / photos for every shot (Pexels first, Pixabay second).
+"""Find real stock footage / photos that actually match each line (Pexels + Pixabay, checked by a vision model).
 
 Usage: python3 scripts/fetch_media.py props.render.json
-Needs env PEXELS_API_KEY and/or PIXABAY_API_KEY. Writes files to public/media/ and fills `media` / `medias`
-in props.render.json. Clips are cut to the shot length, scaled/cropped to 1920x1080 @30fps, no audio.
-Never fails the render: a shot with nothing found falls back to the designed abstract background.
-API shapes verified against pexels.com/api/documentation and pixabay.com/api/docs (Oct 2026).
+Env: PEXELS_API_KEY, PIXABAY_API_KEY, OPENROUTER_API_KEY (vision check; without it the first keyword match is used).
+For every shot: collect up to ~10 candidates from both libraries -> a vision model looks at their preview images next to the
+narration and picks the one that literally shows it (or none) -> download, cut to the shot length, 1920x1080 @30fps.
+A shot with no good match gets no footage: the scene falls back to its designed graphic background (never a random clip).
+API shapes verified against pexels.com/api/documentation, pixabay.com/api/docs and OpenRouter image-understanding docs (Oct 2026).
 """
 import json, os, re, subprocess, sys, time, urllib.parse, urllib.request
 from PIL import Image
@@ -16,39 +17,43 @@ os.makedirs(OUT, exist_ok=True)
 USED_PATH = os.path.join(ROOT, 'used_media.json')
 PEX = os.environ.get('PEXELS_API_KEY', '').strip()
 PIX = os.environ.get('PIXABAY_API_KEY', '').strip()
-UA = {'User-Agent': 'tech-impact-docs/1.0 (T&I News)'}
+ORK = os.environ.get('OPENROUTER_API_KEY', '').strip()
+VISION_MODEL = os.environ.get('VISION_MODEL', 'openai/gpt-4o-mini')
+UA = {'User-Agent': 'tech-impact-docs/2.0 (T&I News)'}
 
 p = json.load(open(PROPS, encoding='utf-8'))
 used_list = json.load(open(USED_PATH)) if os.path.exists(USED_PATH) else []
 used = set(used_list)
-fresh = []
-credits = []
+fresh, credits = [], []
+stats = {'pexels_http': {}, 'pixabay_http': {}, 'vision_calls': 0, 'vision_rejects': 0, 'shots': 0, 'filled': 0}
 cache = {}
 
 
-def get_json(url, headers=None):
+def get_json(url, headers=None, provider='x'):
     if url in cache:
         return cache[url]
     for attempt in range(3):
         try:
             req = urllib.request.Request(url, headers={**UA, **(headers or {})})
             with urllib.request.urlopen(req, timeout=30) as r:
+                stats[f'{provider}_http'][str(r.status)] = stats[f'{provider}_http'].get(str(r.status), 0) + 1
                 cache[url] = json.load(r)
                 return cache[url]
         except urllib.error.HTTPError as e:
+            stats[f'{provider}_http'][str(e.code)] = stats[f'{provider}_http'].get(str(e.code), 0) + 1
             if e.code == 429:
                 time.sleep(20); continue
-            if e.code == 404:
-                return None
-            print('HTTP', e.code, url.split('?')[0]); return None
+            if e.code != 404:
+                print(f'  {provider} HTTP {e.code}: {e.read()[:200]!r}')
+            return None
         except Exception as e:
-            print('fetch error', e); time.sleep(3)
+            print('  fetch error', provider, e); time.sleep(3)
     return None
 
 
 def download(url, path):
     req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=120) as r, open(path, 'wb') as f:
+    with urllib.request.urlopen(req, timeout=180) as r, open(path, 'wb') as f:
         while True:
             b = r.read(1 << 20)
             if not b:
@@ -56,64 +61,105 @@ def download(url, path):
             f.write(b)
 
 
-# ---------------- providers ----------------
+# ---------------- providers (each candidate carries a preview image for the vision check) ----------------
 def pexels_videos(q):
     if not PEX:
         return []
-    qs = urllib.parse.urlencode({'query': q, 'orientation': 'landscape', 'size': 'medium', 'per_page': 20})
-    d = get_json('https://api.pexels.com/v1/videos/search?' + qs, {'Authorization': PEX}) or \
-        get_json('https://api.pexels.com/videos/search?' + qs, {'Authorization': PEX}) or {}
+    qs = urllib.parse.urlencode({'query': q, 'orientation': 'landscape', 'size': 'medium', 'per_page': 8})
+    d = get_json('https://api.pexels.com/videos/search?' + qs, {'Authorization': PEX}, 'pexels') or \
+        get_json('https://api.pexels.com/v1/videos/search?' + qs, {'Authorization': PEX}, 'pexels') or {}
     out = []
     for v in d.get('videos', []):
         files = [f for f in v.get('video_files', []) if f.get('file_type') == 'video/mp4' and (f.get('width') or 0) >= 1280]
-        if not files:
+        if not files or not v.get('image'):
             continue
         best = min(files, key=lambda f: abs((f.get('width') or 0) - 1920))
-        out.append({'id': f"pexels-v-{v['id']}", 'url': best['link'], 'duration': v.get('duration') or 0,
-                    'credit': f"Video by {v.get('user', {}).get('name', 'Pexels')} on Pexels", 'page': v.get('url', '')})
+        desc = re.sub(r'[-/]', ' ', urllib.parse.urlparse(v.get('url', '')).path.split('/')[-2] if v.get('url') else '')
+        out.append({'id': f"pexels-v-{v['id']}", 'url': best['link'], 'duration': v.get('duration') or 0, 'thumb': v['image'],
+                    'desc': desc, 'credit': f"Video by {v.get('user', {}).get('name', 'Pexels')} on Pexels", 'page': v.get('url', '')})
     return out
 
 
 def pixabay_videos(q):
     if not PIX:
         return []
-    qs = urllib.parse.urlencode({'key': PIX, 'q': q[:100], 'per_page': 20, 'safesearch': 'true', 'video_type': 'film'})
-    d = get_json('https://pixabay.com/api/videos/?' + qs) or {}
+    qs = urllib.parse.urlencode({'key': PIX, 'q': q[:100], 'per_page': 8, 'safesearch': 'true', 'video_type': 'film'})
+    d = get_json('https://pixabay.com/api/videos/?' + qs, None, 'pixabay') or {}
     out = []
     for h in d.get('hits', []):
         vs = h.get('videos', {})
         f = next((vs[k] for k in ('medium', 'large', 'small') if vs.get(k, {}).get('url') and vs[k].get('width', 0) >= 1280), None)
-        if f:
-            out.append({'id': f"pixabay-v-{h['id']}", 'url': f['url'], 'duration': h.get('duration') or 0,
-                        'credit': f"Video by {h.get('user', 'Pixabay')} on Pixabay", 'page': h.get('pageURL', '')})
+        th = (vs.get('small') or vs.get('medium') or {}).get('thumbnail')
+        if f and th:
+            out.append({'id': f"pixabay-v-{h['id']}", 'url': f['url'], 'duration': h.get('duration') or 0, 'thumb': th,
+                        'desc': h.get('tags', ''), 'credit': f"Video by {h.get('user', 'Pixabay')} on Pixabay", 'page': h.get('pageURL', '')})
     return out
 
 
 def pexels_photos(q):
     if not PEX:
         return []
-    qs = urllib.parse.urlencode({'query': q, 'orientation': 'landscape', 'per_page': 20})
-    d = get_json('https://api.pexels.com/v1/search?' + qs, {'Authorization': PEX}) or {}
-    return [{'id': f"pexels-p-{x['id']}", 'url': x['src'].get('large2x') or x['src']['original'],
-             'credit': f"Photo by {x.get('photographer', 'Pexels')} on Pexels", 'page': x.get('url', '')} for x in d.get('photos', [])]
+    qs = urllib.parse.urlencode({'query': q, 'orientation': 'landscape', 'per_page': 8})
+    d = get_json('https://api.pexels.com/v1/search?' + qs, {'Authorization': PEX}, 'pexels') or {}
+    return [{'id': f"pexels-p-{x['id']}", 'url': x['src'].get('large2x') or x['src']['original'], 'thumb': x['src'].get('medium'),
+             'desc': x.get('alt', ''), 'credit': f"Photo by {x.get('photographer', 'Pexels')} on Pexels", 'page': x.get('url', '')}
+            for x in d.get('photos', []) if x.get('src', {}).get('medium')]
 
 
 def pixabay_photos(q):
     if not PIX:
         return []
     qs = urllib.parse.urlencode({'key': PIX, 'q': q[:100], 'image_type': 'photo', 'orientation': 'horizontal',
-                                 'min_width': 1280, 'per_page': 20, 'safesearch': 'true'})
-    d = get_json('https://pixabay.com/api/?' + qs) or {}
-    return [{'id': f"pixabay-p-{h['id']}", 'url': h['largeImageURL'], 'credit': f"Photo by {h.get('user', 'Pixabay')} on Pixabay",
-             'page': h.get('pageURL', '')} for h in d.get('hits', [])]
+                                 'min_width': 1280, 'per_page': 8, 'safesearch': 'true'})
+    d = get_json('https://pixabay.com/api/?' + qs, None, 'pixabay') or {}
+    return [{'id': f"pixabay-p-{h['id']}", 'url': h['largeImageURL'], 'thumb': h.get('webformatURL'), 'desc': h.get('tags', ''),
+             'credit': f"Photo by {h.get('user', 'Pixabay')} on Pixabay", 'page': h.get('pageURL', '')} for h in d.get('hits', []) if h.get('webformatURL')]
 
 
-def simpler(q):
-    """Progressively shorter queries: 'african woman tailor sewing' -> 'woman tailor sewing' -> 'tailor sewing'."""
-    w = re.sub(r'[^\w\s-]', ' ', q).split()
+def variants(q):
+    """The query, then shorter versions that keep at least 2 meaningful words (never a single generic word)."""
+    w = [x for x in re.sub(r'[^\w\s-]', ' ', q).split() if x]
     yield ' '.join(w)
-    for i in range(1, max(1, len(w) - 1)):
-        yield ' '.join(w[i:])
+    if len(w) >= 4:
+        yield ' '.join(w[:3])
+        yield ' '.join(w[-3:])
+    elif len(w) == 3:
+        yield ' '.join(w[:2])
+
+
+def vision_pick(cands, narration, query):
+    """Ask a vision model which preview literally shows the line. Returns index or -1."""
+    if not ORK:
+        return 0 if cands else -1
+    content = [{'type': 'text', 'text': (
+        'You are a documentary picture editor. Choose the ONE image that a viewer would accept as literally showing this moment.\n'
+        f'Narration: "{narration}"\nWanted shot: "{query}"\n'
+        'Reject images that only loosely relate (wrong subject, wrong setting, staged lifestyle shots unrelated to the topic, '
+        'text/logos, alcohol, animals unless asked). If none fits well, answer 0.\n'
+        'Reply ONLY JSON: {"best": <1-based index or 0>, "score": <0-10 how well it fits>, "why": "<max 12 words>"}')}]
+    for i, c in enumerate(cands):
+        content.append({'type': 'text', 'text': f'Image {i + 1}:'})
+        content.append({'type': 'image_url', 'image_url': {'url': c['thumb']}})
+    body = {'model': VISION_MODEL, 'temperature': 0, 'max_tokens': 200, 'response_format': {'type': 'json_object'},
+            'messages': [{'role': 'user', 'content': content}]}
+    stats['vision_calls'] += 1
+    for attempt in range(2):
+        try:
+            req = urllib.request.Request('https://openrouter.ai/api/v1/chat/completions', data=json.dumps(body).encode(),
+                                         headers={'Authorization': f'Bearer {ORK}', 'Content-Type': 'application/json'})
+            with urllib.request.urlopen(req, timeout=90) as r:
+                d = json.load(r)
+            raw = d['choices'][0]['message']['content'] or ''
+            j = json.loads(raw[raw.index('{'):raw.rindex('}') + 1])
+            best, score = int(j.get('best', 0)), float(j.get('score', 0))
+            print(f'    vision: best={best} score={score} ({j.get("why", "")})')
+            if 1 <= best <= len(cands) and score >= 6:
+                return best - 1
+            stats['vision_rejects'] += 1
+            return -1
+        except Exception as e:
+            print('    vision error', e); time.sleep(5)
+    return -1
 
 
 n = 0
@@ -126,7 +172,7 @@ def prepare_video(c, need, path):
     vf = 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080'
     args = ['ffmpeg', '-v', 'error', '-y']
     if dur < need and need / max(dur, 0.1) <= 1.7:
-        vf = f'setpts={need / dur:.3f}*PTS,' + vf  # gentle slow motion instead of an obvious loop
+        vf = f'setpts={need / dur:.3f}*PTS,' + vf
     elif dur < need:
         args += ['-stream_loop', '-1']
     args += ['-i', tmp, '-t', f'{need:.2f}', '-vf', vf + ',fps=30,format=yuv420p', '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21', path]
@@ -140,64 +186,70 @@ def prepare_image(c, path):
     im = Image.open(tmp).convert('RGB')
     w, h = im.size
     s = max(2400 / w, 1350 / h)
-    im = im.resize((max(1, int(w * s)), max(1, int(h * s))), Image.LANCZOS)
-    im.save(path, 'JPEG', quality=88)  # re-encode strips EXIF/metadata
+    im.resize((max(1, int(w * s)), max(1, int(h * s))), Image.LANCZOS).save(path, 'JPEG', quality=88)  # strips metadata
     os.remove(tmp)
 
 
-def find(query, kind, need, fallback):
-    """kind: 'video' or 'image'. Returns a Media dict or None."""
+def find(query, kind, need, narration):
     global n
-    tries = list(simpler(query)) + ([fallback] if fallback else [])
-    for q in tries:
+    stats['shots'] += 1
+    for q in variants(query or ''):
         if not q:
             continue
         if kind == 'video':
-            cands = pexels_videos(q) + pixabay_videos(q)
-            cands.sort(key=lambda c: 0 if c['duration'] >= need else 1)  # keep provider relevance order within groups
+            a, b = pexels_videos(q), pixabay_videos(q)
+            cands = [c for pair in zip(a, b) for c in pair] + a[len(b):] + b[len(a):]  # interleave providers
+            cands.sort(key=lambda c: 0 if c['duration'] >= need * 0.6 else 1)
         else:
-            cands = pexels_photos(q) + pixabay_photos(q)
-        for c in cands:
-            if c['id'] in used:
-                continue
-            n += 1
-            path = os.path.join(OUT, f"{'v' if kind == 'video' else 'p'}{n}.{'mp4' if kind == 'video' else 'jpg'}")
-            try:
-                prepare_video(c, need, path) if kind == 'video' else prepare_image(c, path)
-            except Exception as e:
-                print('  skip', c['id'], e); continue
-            used.add(c['id']); fresh.append(c['id'])
-            credits.append({'credit': c['credit'], 'page': c['page']})
-            print(f'  {kind} "{q}" -> {c["id"]}')
-            return {'src': 'media/' + os.path.basename(path), 'kind': kind, 'credit': c['credit']}
-    print(f'  nothing for "{query}" ({kind})')
+            a, b = pexels_photos(q), pixabay_photos(q)
+            cands = [c for pair in zip(a, b) for c in pair] + a[len(b):] + b[len(a):]
+        cands = [c for c in cands if c['id'] not in used][:10]
+        if not cands:
+            continue
+        i = vision_pick(cands, narration, q)
+        if i < 0:
+            continue
+        c = cands[i]
+        n += 1
+        path = os.path.join(OUT, f"{'v' if kind == 'video' else 'p'}{n}.{'mp4' if kind == 'video' else 'jpg'}")
+        try:
+            prepare_video(c, need, path) if kind == 'video' else prepare_image(c, path)
+        except Exception as e:
+            print('  skip', c['id'], e); continue
+        used.add(c['id']); fresh.append(c['id'])
+        credits.append({'credit': c['credit'], 'page': c['page']})
+        stats['filled'] += 1
+        print(f'  {kind} "{q}" -> {c["id"]} ({c["desc"][:60]})')
+        return {'src': 'media/' + os.path.basename(path), 'kind': kind, 'credit': c['credit']}
+    print(f'  no good match for "{query}" -> designed graphic background')
     return None
 
 
 tl = {(i['seg'], i['beat']): i['dur'] / 30 for i in p['timeline']['items'] if i['kind'] == 'beat'}
-generic = f"{p.get('sector', '')} technology".strip()
 if not (PEX or PIX):
-    print('No PEXELS_API_KEY / PIXABAY_API_KEY set: every shot uses the designed background.')
+    print('No PEXELS_API_KEY / PIXABAY_API_KEY: every shot uses designed graphics.')
 else:
+    print(f'keys: pexels={"yes" if PEX else "NO"} pixabay={"yes" if PIX else "NO"} vision={"yes" if ORK else "NO"} ({VISION_MODEL})')
     th = p.get('thumb', {})
-    th['media'] = find(th.get('query') or p['title'], 'image', 0, generic)
+    th['media'] = find(th.get('query') or p['title'], 'image', 0, th.get('headline', p['title']))
     for si, seg in enumerate(p['segments']):
         for bi, b in enumerate(seg['beats']):
-            v, need = b['visual'], tl[(si, bi)] + 0.6
+            v, need, line = b['visual'], tl[(si, bi)] + 0.6, b['narration']
             t = v['type']
             print(f'[{si}.{bi}] {t}')
-            if t in ('footage', 'split', 'quote'):
-                v['media'] = find(v.get('query', ''), 'video', need, generic)
+            if t in ('footage', 'split', 'device'):
+                v['media'] = find(v.get('query', ''), 'video', need, line)
             elif t == 'stat' and v.get('query'):
-                v['media'] = find(v['query'], 'video', need, generic)
+                v['media'] = find(v['query'], 'video', need, line)
             elif t in ('photo3d', 'newspaper'):
-                v['media'] = find(v.get('query', ''), 'image', need, generic)
+                v['media'] = find(v.get('query', ''), 'image', need, line)
             elif t == 'multiframe':
-                v['medias'] = [find(q, 'video', need, generic) for q in (v.get('queries') or [])[:4]]
+                v['medias'] = [find(q, 'video', need, line) for q in (v.get('queries') or [])[:4]]
             elif t == 'filmstrip':
-                v['medias'] = [find(q, 'image', need, generic) for q in (v.get('queries') or [])[:4]]
+                v['medias'] = [find(q, 'image', need, line) for q in (v.get('queries') or [])[:4]]
 
 p['media_credits'] = credits
+p['media_stats'] = stats
 json.dump(p, open(PROPS, 'w', encoding='utf-8'), ensure_ascii=False)
 json.dump((used_list + fresh)[-4000:], open(USED_PATH, 'w'))
-print(f'{len(fresh)} new media files')
+print('media stats:', json.dumps(stats))

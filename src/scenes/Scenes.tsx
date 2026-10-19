@@ -2,7 +2,8 @@ import React from 'react';
 import {AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame, Easing} from 'remotion';
 import type {Media, Visual} from '../types';
 import {DISPLAY, Look, MONO, SANS, SERIF, rand} from '../theme';
-import {Abstract, LowerThird, MediaLayer, ease} from '../components/Layers';
+import {Abstract, MediaLayer, ease} from '../components/Layers';
+import {Agenda, Device, UiExample} from './Examples';
 import {WorldMap} from '../components/WorldMap';
 
 type P = {look: Look; seed: number; dur: number; ltDelay?: number};
@@ -15,7 +16,6 @@ const Footage: React.FC<P & {v: Extract<Visual, {type: 'footage'}>}> = ({v, look
   <AbsoluteFill>
     <MediaLayer media={v.media} look={look} seed={seed} dur={dur} />
     <AbsoluteFill style={{background: 'linear-gradient(0deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 40%)'}} />
-    {v.caption ? <LowerThird text={v.caption} look={look} delay={ltDelay} /> : null}
   </AbsoluteFill>
 );
 
@@ -39,8 +39,7 @@ const Photo3D: React.FC<P & {v: Extract<Visual, {type: 'photo3d'}>}> = ({v, look
           fontSize: 92, color: look.ink, textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: 1, textShadow: shadow,
           opacity: ease(f, 6, 20), transform: `scale(${0.96 + 0.04 * ease(f, 6, 30)})`}}>{v.title}</div>
       ) : null}
-      {v.caption ? <LowerThird text={v.caption} look={look} delay={ltDelay} /> : null}
-    </AbsoluteFill>
+      </AbsoluteFill>
   );
 };
 
@@ -325,15 +324,11 @@ const Filmstrip: React.FC<P & {v: Extract<Visual, {type: 'filmstrip'}>}> = ({v, 
           </div>
         ))}
       </div>
-      {v.caption ? (
-        <div style={{position: 'absolute', bottom: 70, width: '100%', textAlign: 'center', fontFamily: DISPLAY, fontWeight: 700, fontSize: 64,
-          color: '#fff', textTransform: 'uppercase', letterSpacing: 3, opacity: ease(f, 10, 24)}}>{v.caption}</div>
-      ) : null}
     </AbsoluteFill>
   );
 };
 
-export const VisualScene: React.FC<P & {v: Visual; region: string}> = ({v, look, seed, dur, region, ltDelay}) => {
+export const VisualScene: React.FC<P & {v: Visual; region: string; title?: string; tech?: string}> = ({v, look, seed, dur, region, ltDelay, title, tech}) => {
   switch (v.type) {
     case 'footage': return <Footage v={v} look={look} seed={seed} dur={dur} ltDelay={ltDelay} />;
     case 'photo3d': return <Photo3D v={v} look={look} seed={seed} dur={dur} ltDelay={ltDelay} />;
@@ -347,6 +342,9 @@ export const VisualScene: React.FC<P & {v: Visual; region: string}> = ({v, look,
     case 'split': return <Split v={v} look={look} seed={seed} dur={dur} />;
     case 'cards': return <Cards v={v} look={look} seed={seed} dur={dur} />;
     case 'filmstrip': return <Filmstrip v={v} look={look} seed={seed} dur={dur} />;
+    case 'ui': return <UiExample v={v} look={look} seed={seed} dur={dur} />;
+    case 'device': return <Device v={v} look={look} seed={seed} dur={dur} />;
+    case 'agenda': return <Agenda items={v.items || []} look={look} seed={seed} dur={dur} title={title} tech={tech} />;
     default: return <Abstract look={look} seed={seed} />;
   }
 };

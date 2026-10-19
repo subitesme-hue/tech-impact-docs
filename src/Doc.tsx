@@ -2,10 +2,10 @@ import React from 'react';
 import {AbsoluteFill, Sequence} from 'remotion';
 import type {DocProps, Media, Visual} from './types';
 import {lookOf} from './theme';
-import {FilmTexture, Hud} from './components/Layers';
+import {FilmTexture} from './components/Layers';
 import {CutOverlay, Entry} from './components/Transitions';
 import {VisualScene} from './scenes/Scenes';
-import {ChapterCard, Ident, Outro, Subtitles, Thumb} from './scenes/Brand';
+import {ChapterCard, Ident, Outro, Thumb} from './scenes/Brand';
 
 const firstMedia = (v: Visual): Media | undefined =>
   (v as any).media || ((v as any).medias || []).find(Boolean);
@@ -26,15 +26,12 @@ export const Doc: React.FC<DocProps> = (p) => {
         let body: React.ReactNode = null;
         if (it.kind === 'thumb') body = <Thumb p={p} look={look} dur={it.dur} />;
         else if (it.kind === 'ident') body = <Ident p={p} look={look} medias={medias} dur={it.dur} />;
+        else if (it.kind === 'chapter' && seg) body = <ChapterCard n={chapterNo} title={seg.title} look={look} full />;
         else if (it.kind === 'outro') body = <Outro p={p} look={look} media={medias[medias.length - 1]} dur={it.dur} />;
         else if (beat) {
           body = (
             <>
-              <VisualScene v={beat.visual} look={look} seed={seed} dur={it.dur} region={p.region} ltDelay={it.chapterStart ? 84 : 8} />
-              <Hud look={look}
-                left={seg!.kind === 'summary' ? 'IN THIS FILM' : `CH ${String(chapterNo).padStart(2, '0')} · ${seg!.title.toUpperCase()}`}
-                right={`${p.region.toUpperCase()} · ${p.sector.toUpperCase()}`} />
-              {it.chapterStart ? <ChapterCard n={chapterNo} title={seg!.title} look={look} /> : null}
+              <VisualScene v={beat.visual} look={look} seed={seed} dur={it.dur} region={p.region} title={p.title} tech={p.tech} />
             </>
           );
         }
@@ -52,7 +49,6 @@ export const Doc: React.FC<DocProps> = (p) => {
         );
       })}
       <FilmTexture look={look} />
-      {p.captions_on !== false ? <Subtitles caps={tl.captions} look={look} hideFrom={tl.items[tl.items.length - 1].start} /> : null}
     </AbsoluteFill>
   );
 };

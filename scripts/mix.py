@@ -70,7 +70,7 @@ gain = (HIGH - (HIGH - LOW) * speech) * vo_rms
 # swells on the thumbnail and the series ident (no narration there)
 for c in tl['cuts']:
     if c['item'] == 'ident':
-        a, b = int(c['t'] * SR), int((c['t'] + 3.4) * SR)
+        a, b = int(c['t'] * SR), int((c['t'] + 2.6) * SR)
         gain[a:b] = np.maximum(gain[a:b], 0.42 * vo_rms)
 gain[:int(1.4 * SR)] = np.maximum(gain[:int(1.4 * SR)], 0.35 * vo_rms)
 fo = int(3 * SR)

@@ -15,14 +15,17 @@ export type Visual =
   | {type: 'quote'; text: string; attribution: string; query: string; media?: Media}
   | {type: 'split'; heading: string; bullets: string[]; query: string; media?: Media}
   | {type: 'cards'; heading?: string; items: string[]}
-  | {type: 'filmstrip'; queries: string[]; caption?: string; medias?: Media[]};
+  | {type: 'filmstrip'; queries: string[]; caption?: string; medias?: Media[]}
+  | {type: 'ui'; variant: 'chat' | 'dashboard' | 'list' | 'notify'; app: string; lines: string[]; kpis?: {label: string; value: string}[]}
+  | {type: 'device'; kind: 'laptop' | 'phone'; query: string; media?: Media}
+  | {type: 'agenda'; items?: string[]};
 
 export type Beat = {narration: string; visual: Visual};
 
 export type Segment = {kind: 'summary' | 'chapter'; title: string; beats: Beat[]};
 
 export type TimelineItem = {
-  kind: 'thumb' | 'beat' | 'ident' | 'outro';
+  kind: 'thumb' | 'beat' | 'ident' | 'outro' | 'chapter';
   seg?: number;
   beat?: number;
   start: number; // frame
@@ -40,6 +43,7 @@ export type DocProps = {
   region: string;
   sector: string;
   title: string;
+  tech?: string;
   thumb: {kicker: string; headline: string; highlight?: string; query?: string; media?: Media};
   segments: Segment[];
   outro: {narration: string; line?: string};

@@ -16,15 +16,16 @@ props_path, work = sys.argv[1], sys.argv[2]
 os.makedirs(work, exist_ok=True)
 props = json.load(open(props_path, encoding='utf-8'))
 
-VOICES = ['am_michael', 'af_heart', 'bm_george', 'af_bella', 'am_fenrir', 'bf_emma', 'am_puck', 'af_nicole', 'bm_fable', 'bf_isabella']
+VOICES = ['am_michael', 'af_heart', 'bm_george', 'af_bella', 'am_fenrir', 'bf_emma', 'af_nicole', 'bm_fable']
 voice = os.environ.get('VOICE') or props.get('voice') or VOICES[0]
-speed = float(os.environ.get('VOICE_SPEED') or props.get('voice_speed') or 1.0)
-MAX_SEC = float(os.environ.get('MAX_SEC', '360'))
+speed = float(os.environ.get('VOICE_SPEED') or props.get('voice_speed') or 1.1)
+MAX_SEC = float(os.environ.get('MAX_SEC', '215'))  # 2:30-3:30 episodes
 
 # Same rotating transition sets as src/theme.ts LOOKS
 LOOK_TX = [['burn', 'zoom', 'flash', 'burn'], ['glitch', 'zoom', 'glitch', 'flash'], ['zoom', 'flash', 'zoom', 'glitch'], ['zoom', 'burn', 'glitch', 'zoom']]
-MIN_SEC = {'stat': 5.0, 'bars': 6.0, 'map': 5.5, 'timeline': 6.5, 'cards': 5.0, 'newspaper': 5.0, 'split': 6.0, 'multiframe': 3.5, 'filmstrip': 5.0}
-THUMB_SEC, IDENT_SEC, GAP, SENT_PAUSE, CHAPTER_LEAD = 1.4, 3.4, 0.35, 0.16, 0.7
+MIN_SEC = {'stat': 4.2, 'bars': 5.0, 'map': 5.0, 'timeline': 5.5, 'cards': 4.5, 'newspaper': 4.5, 'split': 5.0, 'multiframe': 3.2, 'filmstrip': 4.5,
+           'ui': 5.5, 'device': 4.0, 'agenda': 6.0}
+THUMB_SEC, IDENT_SEC, GAP, SENT_PAUSE, CARD_SEC = 1.2, 2.6, 0.18, 0.07, 1.3
 
 from kokoro_onnx import Kokoro
 kdir = os.environ.get('KOKORO_DIR', os.path.join(ROOT, 'models'))
@@ -90,7 +91,10 @@ def build():
     for si, seg in enumerate(props['segments']):
         for bi, beat in enumerate(seg['beats']):
             chapter_start = seg['kind'] == 'chapter' and bi == 0
-            lead = CHAPTER_LEAD if chapter_start else 0.12
+            if chapter_start:  # short full-screen section title card before the section
+                items.append({'kind': 'chapter', 'seg': si, 'start': round(t * FPS), 'dur': round(CARD_SEC * FPS), 'transition': next_tx(True)})
+                t += CARD_SEC
+            lead = 0.12
             cursor = t + lead
             for s in sentences(beat['narration']):
                 a = speak(s)
@@ -101,7 +105,7 @@ def build():
             vo_end = cursor - SENT_PAUSE
             dur = max(vo_end - t + GAP, MIN_SEC.get(beat['visual'].get('type'), 3.0))
             items.append({'kind': 'beat', 'seg': si, 'beat': bi, 'start': round(t * FPS), 'dur': round(dur * FPS),
-                          'chapterStart': chapter_start, 'transition': next_tx(chapter_start or bi == 0)})
+                          'chapterStart': chapter_start, 'transition': 'cut' if chapter_start else next_tx(bi == 0)})
             t += dur
         if seg['kind'] == 'summary':
             summary_end = t
@@ -124,12 +128,12 @@ def build():
 
 clips, items, caps, total, summary_end = build()
 total_sec = total / FPS
-if total_sec > MAX_SEC and speed < 1.1:
-    print(f'{total_sec:.1f}s is over {MAX_SEC}s; re-voicing at 1.08x')
-    speed = 1.08
+if total_sec > MAX_SEC and speed < 1.17:
+    print(f'{total_sec:.1f}s is over {MAX_SEC}s; re-voicing at 1.18x')
+    speed = 1.18
     clips, items, caps, total, summary_end = build()
     total_sec = total / FPS
-if total_sec > MAX_SEC + 5:
+if total_sec > MAX_SEC + 12:
     raise SystemExit(f'Video would be {total_sec:.0f}s (> {MAX_SEC:.0f}s). Shorten the script.')
 
 track = np.zeros(int(total_sec * SR) + SR, dtype='float32')
