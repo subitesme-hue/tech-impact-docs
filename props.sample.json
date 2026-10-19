@@ -1,0 +1,267 @@
+{
+  "id": "sample-mpesa",
+  "date": "2026-10-20",
+  "look": 0,
+  "region": "Africa",
+  "sector": "Finance",
+  "title": "The phone that became a bank",
+  "thumb": {
+    "kicker": "Africa · Finance",
+    "headline": "How a text message pulled 194,000 homes out of poverty",
+    "highlight": "194,000 homes",
+    "query": "kenya woman mobile phone market"
+  },
+  "segments": [
+    {
+      "kind": "summary",
+      "title": "In this film",
+      "beats": [
+        {
+          "narration": "In 2007, a Kenyan phone network launched a simple way to send money by text message.",
+          "visual": {
+            "type": "footage",
+            "query": "nairobi street aerial",
+            "caption": "Nairobi, Kenya"
+          }
+        },
+        {
+          "narration": "No bank branch. No account book. Just a basic phone and a corner shop agent.",
+          "visual": {
+            "type": "multiframe",
+            "queries": [
+              "african market vendor phone",
+              "small shop kenya",
+              "hands typing old mobile phone"
+            ],
+            "word": "No bank"
+          }
+        },
+        {
+          "narration": "Researchers followed sixteen hundred households for years, and what they found surprised even them.",
+          "visual": {
+            "type": "stat",
+            "value": 194000,
+            "label": "Kenyan households lifted out of extreme poverty",
+            "source": "Suri & Jack, Science, 2016",
+            "query": "kenya village family"
+          }
+        },
+        {
+          "narration": "This is the story of M-Pesa, and of the women who used it to rewrite their futures.",
+          "visual": {
+            "type": "photo3d",
+            "query": "african woman entrepreneur smiling shop",
+            "title": "The phone that became a bank"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "chapter",
+      "title": "Money without a bank",
+      "beats": [
+        {
+          "narration": "Before mobile money, sending cash across Kenya meant a long bus ride, a trusted friend, or a costly transfer office.",
+          "visual": {
+            "type": "footage",
+            "query": "bus station africa crowd",
+            "caption": "Before 2007"
+          }
+        },
+        {
+          "narration": "For millions of rural families, the nearest bank was simply too far away, and too expensive to use.",
+          "visual": {
+            "type": "footage",
+            "query": "rural kenya dirt road village"
+          }
+        },
+        {
+          "narration": "M-Pesa changed the route. Cash went in at a local agent, travelled as a text message, and came out at another agent hundreds of kilometres away.",
+          "visual": {
+            "type": "map",
+            "region": "Africa",
+            "label": "Kenya",
+            "points": [
+              {
+                "name": "Nairobi",
+                "lat": -1.29,
+                "lon": 36.82
+              },
+              {
+                "name": "Mombasa",
+                "lat": -4.04,
+                "lon": 39.67
+              },
+              {
+                "name": "Kisumu",
+                "lat": -0.09,
+                "lon": 34.77
+              }
+            ]
+          }
+        },
+        {
+          "narration": "Today the service counts more than twenty five million users, supported by over one hundred and twenty thousand agents.",
+          "visual": {
+            "type": "stat",
+            "value": 120000,
+            "suffix": "+",
+            "label": "M-Pesa agents across Kenya",
+            "source": "MIT News, 2016",
+            "query": "mobile money agent kiosk"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "chapter",
+      "title": "Measuring the impact",
+      "beats": [
+        {
+          "narration": "Economists Tavneet Suri of MIT and William Jack of Georgetown wanted to know whether this convenience changed lives, or only habits.",
+          "visual": {
+            "type": "newspaper",
+            "headline": "Mobile money and the poverty line",
+            "deck": "A long-run study of 1,600 Kenyan households",
+            "dateline": "Science · 2016",
+            "query": "researcher notebook field survey"
+          }
+        },
+        {
+          "narration": "They compared communities that gained agents quickly with communities that waited longer, tracking the same families from 2008 onward.",
+          "visual": {
+            "type": "split",
+            "heading": "How the study worked",
+            "bullets": [
+              "About 1,600 households surveyed over several years",
+              "Areas with more agents compared to areas with fewer",
+              "Extreme poverty measured at $1.25 a day"
+            ],
+            "query": "village interview africa notebook"
+          }
+        },
+        {
+          "narration": "The result: about two percent of Kenyan households, roughly one hundred and ninety four thousand, moved out of extreme poverty.",
+          "visual": {
+            "type": "stat",
+            "value": 2,
+            "suffix": "%",
+            "label": "of all Kenyan households left extreme poverty",
+            "source": "Suri & Jack, Science, 2016",
+            "query": "kenya family home evening"
+          }
+        },
+        {
+          "narration": "Saving became easier too. Households with more agents nearby saw savings rise by around twenty two percent.",
+          "visual": {
+            "type": "footage",
+            "query": "coins savings jar hands",
+            "caption": "Savings up about 22%"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "chapter",
+      "title": "The women who led the change",
+      "beats": [
+        {
+          "narration": "The strongest effects appeared in households headed by women.",
+          "visual": {
+            "type": "photo3d",
+            "query": "african woman portrait market stall"
+          }
+        },
+        {
+          "narration": "Where agent numbers grew, daily spending per person in these homes rose about eighteen and a half percent, and extreme poverty among them fell by more than nine percent.",
+          "visual": {
+            "type": "bars",
+            "title": "Female-headed households",
+            "unit": "%",
+            "items": [
+              {
+                "label": "Daily consumption per person",
+                "value": 18.5
+              },
+              {
+                "label": "Drop in extreme poverty",
+                "value": 9.2
+              },
+              {
+                "label": "Drop in general poverty",
+                "value": 8.6
+              }
+            ],
+            "source": "Suri & Jack, Science, 2016"
+          }
+        },
+        {
+          "narration": "Around one hundred and eighty five thousand women left farming for business and retail work.",
+          "visual": {
+            "type": "multiframe",
+            "queries": [
+              "african woman tailor sewing",
+              "woman selling fruit market africa",
+              "african woman shop owner"
+            ],
+            "word": "185,000 women"
+          }
+        },
+        {
+          "narration": "A safe place to keep money meant fewer risks, more choices, and the freedom to build something of their own.",
+          "visual": {
+            "type": "footage",
+            "query": "african woman walking city confident"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "chapter",
+      "title": "A model for the world",
+      "beats": [
+        {
+          "narration": "Kenya's experiment did not stay in Kenya.",
+          "visual": {
+            "type": "footage",
+            "query": "world map digital network",
+            "caption": "Global reach"
+          }
+        },
+        {
+          "narration": "By 2015, more than two hundred and seventy mobile money services were running in ninety three countries, with an estimated four hundred and eleven million accounts.",
+          "visual": {
+            "type": "cards",
+            "heading": "Mobile money by 2015",
+            "items": [
+              "270+ services",
+              "93 countries",
+              "411 million accounts"
+            ]
+          }
+        },
+        {
+          "narration": "The lesson is simple. When technology meets people where they already are, it can open doors that institutions never reached.",
+          "visual": {
+            "type": "photo3d",
+            "query": "sunrise african city skyline"
+          }
+        }
+      ]
+    }
+  ],
+  "outro": {
+    "narration": "Technology changes lives when it reaches the people who need it most. For more stories of tech with real impact, visit T and I News.",
+    "line": "Technology changes lives when it reaches the people who need it most."
+  },
+  "sources": [
+    {
+      "title": "MIT News: Mobile money has lifted 2% of Kenyans out of poverty (2016)",
+      "url": "https://news.mit.edu/2016/mobile-money-kenyans-out-poverty-1208"
+    },
+    {
+      "title": "IPA: Simple access to mobile money lifted two percent of Kenyan households out of poverty",
+      "url": "https://poverty-action.org/news/simple-access-mobile-money-lifted-two-percent-kenyan-households-out-poverty-finds-new-study"
+    }
+  ]
+}

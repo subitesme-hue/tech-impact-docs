@@ -1,0 +1,9 @@
+node_modules
+out
+work
+public/media/*
+!public/media/.gitkeep
+public/vo
+models
+props.render.json
+__pycache__
