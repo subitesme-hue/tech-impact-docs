@@ -104,13 +104,13 @@ VOICE: a confident presenter talking straight to the viewer, like a great tech p
 TRUTH: use ONLY the research. Every number, name and date must come from it. Forecasts must be said as forecasts. Never invent quotes, people or data.
 
 STRUCTURE — "segments" is exactly 7 items in this order:
-0) {"kind":"summary","title":"In this episode","beats":[B1,B2]}: the podcast-style opening, 60-75 words in total.
-   B1 = the hook: one or two sentences with the most surprising fact or tension (visual: footage, photo3d or multiframe).
+0) {"kind":"summary","title":"In this episode","beats":[B1,B2]}: the podcast-style opening, about 30 seconds: 75-90 words in total.
+   B1 = the hook: two or three sentences with the most surprising fact or tension (visual: footage, photo3d or multiframe).
    B2 = the episode overview spoken to the viewer, e.g. "Today we look at X: the problem it solves, what is holding it back, where the money is, who is using it right now, and what it means for the rest of us." Visual MUST be {"type":"agenda"}.
 1..6) {"kind":"chapter","title":T,"beats":[2-3 beats]} with these section titles in this order (you may sharpen the wording, keep the meaning):
    ${SECTIONS.map((s, i) => `${i + 1}. ${s}`).join('\n   ')}
 - Each beat: {"narration": 1-2 sentences, 10-34 words, "visual": {...}}.
-- Total narration across all beats + outro: 420-500 words.
+- Total narration across all beats + outro: 440-520 words.
 - "outro": {"narration": 14-24 words, ending exactly "For more stories of technology with real impact, visit T and I News.", "line": closing thought, max 80 chars}.
 
 VISUALS (one per beat; vary them; never the same type twice in a row except footage). Graphics carry the story; real footage only where the camera can literally show it.
@@ -148,8 +148,8 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
   const beats = segs.flatMap((g) => (Array.isArray(g.beats) ? g.beats : []));
   const introWords = (segs[0]?.beats || []).reduce((a, b) => a + words(b.narration), 0);
   const total = beats.reduce((a, b) => a + words(b.narration), 0) + words(s.outro?.narration);
-  if (introWords < 52 || introWords > 85) problems.push(`intro is ${introWords} words (need 60-75)`);
-  if (total < 390 || total > 530) problems.push(`total narration is ${total} words (need 420-500)`);
+  if (introWords < 68 || introWords > 98) problems.push(`intro is ${introWords} words (need 75-90)`);
+  if (total < 410 || total > 550) problems.push(`total narration is ${total} words (need 440-520)`);
   const researchText = JSON.stringify(res.research).replace(/,/g, '');
   const numOk = (v) => { const n = Number(v); if (!isFinite(n)) return false; return [String(n), n.toFixed(1), String(Math.round(n))].some((f) => researchText.includes(f)); };
   const count = {};

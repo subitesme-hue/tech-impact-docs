@@ -135,7 +135,7 @@ def vision_pick(cands, narration, query):
         'You are a documentary picture editor. Choose the ONE image that a viewer would accept as literally showing this moment.\n'
         f'Narration: "{narration}"\nWanted shot: "{query}"\n'
         'Reject images that only loosely relate (wrong subject, wrong setting, staged lifestyle shots unrelated to the topic, '
-        'text/logos, alcohol, animals unless asked). If none fits well, answer 0.\n'
+        'text/logos, alcohol, animals unless asked, and any clearly identifiable place, landmark or country that differs from the one in the narration). If none fits well, answer 0.\n'
         'Reply ONLY JSON: {"best": <1-based index or 0>, "score": <0-10 how well it fits>, "why": "<max 12 words>"}')}]
     for i, c in enumerate(cands):
         content.append({'type': 'text', 'text': f'Image {i + 1}:'})

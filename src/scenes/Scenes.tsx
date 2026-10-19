@@ -146,7 +146,7 @@ const Bars: React.FC<P & {v: Extract<Visual, {type: 'bars'}>}> = ({v, look, seed
               <div style={{width: w, height: 46, borderRadius: 10, background: `linear-gradient(90deg, ${look.accent}, ${look.accent2})`,
                 boxShadow: `0 0 30px ${look.accent}55`}} />
               <div style={{fontFamily: SANS, fontWeight: 800, fontSize: 40, color: look.ink}}>
-                {fmt(it.value * p, it.value % 1 ? 1 : 0)}{v.unit || ''}
+                {fmt(it.value * p, it.value % 1 ? 1 : 0)}{v.unit ? (/^[a-z]/i.test(v.unit) ? ' ' + v.unit : v.unit) : ''}
               </div>
             </div>
           </div>
