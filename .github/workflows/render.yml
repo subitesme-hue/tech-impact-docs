@@ -80,8 +80,11 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          mkdir -p out/logs
           printf '%s' "$TOPIC" > topic.json
-          node scripts/write.mjs topic.json props.json
+          echo "OPENROUTER_API_KEY set: $([ -n "$OPENROUTER_API_KEY" ] && echo yes || echo NO)" | tee out/logs/write.log
+          set -o pipefail
+          node scripts/write.mjs topic.json props.json 2>&1 | tee -a out/logs/write.log
 
       - name: Write props
         env:
@@ -104,7 +107,11 @@ jobs:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
           CONCURRENCY: '4'
-        run: python3 scripts/render.py props.json
+        run: |
+          mkdir -p out/logs
+          echo "PEXELS_API_KEY set: $([ -n "$PEXELS_API_KEY" ] && echo yes || echo NO), PIXABAY_API_KEY set: $([ -n "$PIXABAY_API_KEY" ] && echo yes || echo NO)" | tee out/logs/render.log
+          set -o pipefail
+          python3 scripts/render.py props.json 2>&1 | tee -a out/logs/render.log
 
       - name: Publish release (video, summary, thumbnail)
         env:
@@ -127,10 +134,24 @@ jobs:
         env:
           PE_API_KEY: ${{ secrets.PE_API_KEY }}
           PE_BASE_URL: ${{ vars.PE_BASE_URL }}
-        run: node scripts/post.mjs props.render.json
+        run: |
+          mkdir -p out/logs
+          echo "PE_API_KEY set: $([ -n "$PE_API_KEY" ] && echo yes || echo NO)" | tee out/logs/post.log
+          set -o pipefail
+          node scripts/post.mjs props.render.json 2>&1 | tee -a out/logs/post.log
 
       - name: Attach post results
         if: ${{ always() && inputs.post == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: test -f out/post_results.json && gh release upload "${{ inputs.tag }}" out/post_results.json --clobber || true
+
+      - name: Diagnostics release on failure (readable without log access)
+        if: ${{ failure() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p out/logs
+          { echo "Run ${{ github.run_id }} failed."; for f in out/logs/*.log; do [ -f "$f" ] && { echo; echo "== $f =="; tail -n 80 "$f"; }; done; } > /tmp/diag.md
+          gh release delete "diag-${{ inputs.tag }}" -y --cleanup-tag 2>/dev/null || true
+          gh release create "diag-${{ inputs.tag }}" --prerelease --title "DIAG ${{ inputs.tag }}" --notes-file /tmp/diag.md
