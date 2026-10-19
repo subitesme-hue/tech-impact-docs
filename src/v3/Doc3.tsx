@@ -25,7 +25,7 @@ const ShotView: React.FC<{s: Shot; look: Look; dur: number; seed: number; sectio
     case 'kinetic': return <Kinetic look={look} dur={dur} text={s.text} emphasis={s.emphasis} />;
     case 'device': return <UiExample look={look} seed={seed} dur={dur} v={{type: 'ui', variant: s.device === 'phone' ? 'notify' : 'list', app: s.app, lines: s.lines}} />;
     case 'footage': return <FootageShot look={look} dur={dur} media={s.media} label={s.label} seed={seed} />;
-    case 'agenda': return <Agenda look={look} dur={dur} items={sections} tech={p.tech || p.title} />;
+    case 'agenda': return <Agenda look={look} dur={dur} items={sections} tech={p.title || p.tech || ''} />;
     default: return <Stage look={look} dur={dur} />;
   }
 };

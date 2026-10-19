@@ -134,6 +134,7 @@ sf.write(os.path.join(work, 'vo.wav'), track, SR)
 
 props['timeline'] = {'fps': FPS, 'total': total, 'summaryEnd': round(summary_end * FPS), 'items': items}
 props['voice'] = voice
+props['voice_engine'] = ENGINE
 props['has_logo'] = os.path.exists(os.path.join(ROOT, 'public', 'logo.png'))
 json.dump(props, open(os.path.join(ROOT, 'props.render.json'), 'w', encoding='utf-8'), ensure_ascii=False)
 json.dump({'fps': FPS, 'total_sec': total / FPS, 'summary_end_sec': summary_end,
