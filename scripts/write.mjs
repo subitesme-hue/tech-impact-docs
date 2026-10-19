@@ -128,7 +128,14 @@ Return ONLY JSON: {"title","thumb","segments","outro","post"}. English only.`;
   if (prevProblems.length) user += `\n\nYour previous draft was rejected for: ${prevProblems.join('; ')}. Fix all of these.`;
   const d = await chat({ model: cfg.script_model, response_format: { type: 'json_object' }, temperature: 0.6, max_tokens: 12000,
     messages: [{ role: 'system', content: system }, { role: 'user', content: user }] });
-  const s = parseJson(d.choices?.[0]?.message?.content);
+  const ch = d.choices?.[0] || {};
+  const rawText = String(ch.message?.content || '');
+  console.log(`draft ${run + 1} raw: finish=${ch.finish_reason} native=${ch.native_finish_reason || ''} chars=${rawText.length} usage=${JSON.stringify(d.usage || {})}`);
+  console.log('  head:', rawText.slice(0, 300).replace(/\n/g, ' '));
+  console.log('  tail:', rawText.slice(-300).replace(/\n/g, ' '));
+  if (d.error) console.log('  error:', JSON.stringify(d.error).slice(0, 500));
+  fs.mkdirSync('out/logs', {recursive: true}); fs.writeFileSync(`out/logs/script-draft-${run + 1}.txt`, rawText);
+  const s = parseJson(rawText);
   const problems = [];
   const words = x => String(x || '').split(/\s+/).filter(Boolean).length;
   const cut = (x, n) => String(x || '').trim().slice(0, n);
