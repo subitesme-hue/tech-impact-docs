@@ -78,7 +78,7 @@ English only.`;
   const seen = new Set();
   const uniq = [...(Array.isArray(r.sources) ? r.sources : []), ...cited].filter((s) => s && /^https?:\/\//.test(s.url || ''))
     .filter((s) => { const k = s.url.replace(/[#?].*$/, ''); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 8);
-  const problems = [];
+  const problems = [], soft = []; // soft = small issues the edit can absorb (voice.py spreads a missed cue evenly)
   if (!r.found) problems.push('no story found');
   if (facts.length < 8) problems.push(`only ${facts.length} sourced facts`);
   if (facts.filter((f) => typeof f.number === 'number').length < 4) problems.push('fewer than 4 facts with numbers');
@@ -93,8 +93,10 @@ fs.writeFileSync('research.json', JSON.stringify(res, null, 2));
 
 // ---------------------------------------------------------------- script (V3: animated documentary, cut on spoken words)
 import {createRequire} from 'node:module';
-const ICONS = new Set(Object.keys(createRequire(import.meta.url)('lucide-react').icons || {}).map((k) => k));
-const iconOk = (n) => typeof n === 'string' && (ICONS.has(n) || ICONS.has(n.replace(/Icon$/, '')));
+// Every name the renderer can resolve: lucide-react exports icons AND their aliases (e.g. Building2) at the top level.
+const LUCIDE = createRequire(import.meta.url)('lucide-react');
+const iconOk = (n) => typeof n === 'string' && /^[A-Z]/.test(n) && !!LUCIDE[n] && n !== 'Icon' && n !== 'createLucideIcon';
+const tok = (x) => String(x || '').toLowerCase().split(/\s+/).map((w) => w.replace(/[^a-z0-9]/g, '')).filter(Boolean); // same as voice.py norm()
 const words = (x) => String(x || '').split(/\s+/).filter(Boolean).length;
 const cut = (x, n) => String(x || '').trim().slice(0, n);
 const KINDS = ['globe', 'route', 'flow', 'counter', 'compare', 'units', 'chart', 'steps', 'network', 'icons', 'timeline', 'kinetic', 'device', 'footage', 'agenda'];
@@ -104,7 +106,7 @@ const EXAMPLE = {kind: 'summary', title: 'In this episode', beats: [
       {kind: 'globe', focus: {lat: 21.4, lon: 39.9}, region: 'GCC', points: [{name: 'Mina', lat: 21.41, lon: 39.89}], label: 'Makkah, Saudi Arabia', at: 'In one'},
       {kind: 'footage', query: 'delivery drone flying over city', at: 'licensed'}]},
   {narration: 'Today: how medical drones work, the problem they solve, what holds them back, where the money is, who flies them now, and what comes next.', shots: [{kind: 'agenda'}]}]};
-let final = null, prevProblems = [];
+let final = null, prevProblems = [], prevDraft = null, best = null;
 for (let run = 0; run < 3 && !final; run++) {
   const system = `You are an independent documentary maker with the instincts of a top executive producer, a techpreneur and a tech journalist. You make "T&I Tech Impact": 2:30-3:30 minute animated documentary episodes (the feel of a Nat Geo / Vox explainer) about one trending technology. The goal: educate and entertain founders, executives and curious viewers so they subscribe and visit tai.news.
 
@@ -147,19 +149,19 @@ THUMBNAIL "thumb": {"kicker":"<Country or region> · <the tech>", "headline": 5-
 SOCIAL "post": "youtube_title" (max 90, truthful curiosity + keyword), "youtube_description" (2 short paragraphs, max 700 chars), "youtube_tags" (8-15), "linkedin" (120-200 words: insight-led opening, 3 takeaways incl. the business opportunity, a question, then "Watch the full episode: https://tai.news" and 3-5 hashtags), "facebook" (60-110 words, ends "Full episode on T&I News: https://tai.news" + 3 hashtags), "x" (max 200 chars, no emojis, no links, 1-2 hashtags).
 Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
   let user = `Region: ${t.region}\nResearch (the only facts you may use):\n${JSON.stringify(res.research)}`;
-  if (prevProblems.length) user += `\n\nYour previous draft was rejected for: ${prevProblems.join('; ')}. Fix all of these.`;
+  if (prevDraft) user += `\n\nYOUR PREVIOUS DRAFT:\n${JSON.stringify(prevDraft)}\n\nIt was rejected for: ${prevProblems.join('; ')}.\nReturn the full corrected JSON. Change only what is needed to fix these problems; keep everything else.`;
   const d = await chat({model: cfg.script_model, response_format: {type: 'json_object'}, temperature: 0.7, max_tokens: 20000, reasoning: {effort: 'low'},
     messages: [{role: 'system', content: system}, {role: 'user', content: user}]});
   const {json: s} = reply(d, `script-${run + 1}`);
 
-  const problems = [];
+  const problems = [], soft = []; // soft = small issues the edit can absorb (voice.py spreads a missed cue evenly)
   const segs = Array.isArray(s.segments) ? s.segments : [];
   if (segs.length !== 7) problems.push(`need 7 segments (intro + 6 sections), got ${segs.length}`);
   if (segs[0] && segs[0].kind !== 'summary') problems.push('segments[0] must be the intro (kind summary)');
   const beats = segs.flatMap((g) => (Array.isArray(g.beats) ? g.beats : []));
   const introWords = (segs[0]?.beats || []).reduce((a, b) => a + words(b.narration), 0);
   const total = beats.reduce((a, b) => a + words(b.narration), 0) + words(s.outro?.narration);
-  if (introWords < 62 || introWords > 98) problems.push(`intro is ${introWords} words (need 72-88)`);
+  if (introWords < 55 || introWords > 105) problems.push(`intro is ${introWords} words (need 72-88)`); else if (introWords < 68 || introWords > 94) soft.push(`intro is ${introWords} words (need 72-88)`);
   if (total < 410 || total > 550) problems.push(`total narration is ${total} words (need 440-520)`);
   const researchText = JSON.stringify(res.research).replace(/,/g, '');
   const numOk = (v) => { const n = Number(v); if (!isFinite(n)) return false; return [String(n), n.toFixed(1), String(Math.round(n)), String(n * 1000), String(n / 1000)].some((f) => researchText.includes(f)); };
@@ -170,8 +172,8 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
     const shots = Array.isArray(b.shots) ? b.shots : [];
     if (!shots.length) { problems.push(`beat ${bi + 1}: no shots`); return; }
     const w = words(b.narration);
-    if (w < 6 || w > 42) problems.push(`beat ${bi + 1}: narration ${w} words`);
-    if (shots[0].kind !== 'agenda' && w / shots.length > 13) problems.push(`beat ${bi + 1}: ${w} words but only ${shots.length} shots (need a new shot every 7-12 words)`);
+    if (w < 6 || w > 50) problems.push(`beat ${bi + 1}: narration ${w} words`);
+    if (shots[0].kind !== 'agenda' && w / shots.length > 13) (w / shots.length > 17 ? problems : soft).push(`beat ${bi + 1}: ${w} words but only ${shots.length} shots (need a new shot every 7-12 words)`);
     shots.forEach((sh, si) => {
       nShots++;
       if (!KINDS.includes(sh.kind)) { problems.push(`beat ${bi + 1} shot ${si + 1}: unknown kind "${sh.kind}"`); return; }
@@ -179,8 +181,8 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
       if (sh.kind === prev) problems.push(`beat ${bi + 1} shot ${si + 1}: same kind twice in a row (${sh.kind})`);
       prev = sh.kind;
       if (si > 0) {
-        const cue = String(sh.at || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ')[0];
-        if (!cue || !String(b.narration).toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).includes(cue)) problems.push(`beat ${bi + 1} shot ${si + 1}: "at" cue "${sh.at}" is not a word in the narration`);
+        const cue = tok(sh.at)[0];
+        if (!cue || !tok(b.narration).includes(cue)) soft.push(`beat ${bi + 1} shot ${si + 1}: "at" cue "${sh.at}" is not a word in the narration`);
       }
       const collect = (x) => { if (x && x.icon !== undefined) icons.push(x.icon); };
       ['nodes', 'items'].forEach((k) => (sh[k] || []).forEach(collect));
@@ -194,7 +196,7 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
     });
   });
   const bad = icons.filter((n) => !iconOk(n));
-  if (bad.length) problems.push(`unknown icon names: ${[...new Set(bad)].slice(0, 8).join(', ')} (use Lucide PascalCase names)`);
+  if (bad.length) soft.push(`unknown icon names: ${[...new Set(bad)].slice(0, 8).join(', ')} (use Lucide PascalCase names)`);
   const caps = {kinetic: 3, device: 2, footage: 4, agenda: 1};
   Object.entries(count).forEach(([k, n]) => { if (n > (caps[k] || 5)) problems.push(`${k} used ${n} times (max ${caps[k] || 5})`); });
   if (Object.keys(count).length < 9) problems.push(`only ${Object.keys(count).length} different shot kinds (need 9+)`);
@@ -227,8 +229,14 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
         reply_prefix: 'Watch the full episode:'},
     },
   };
+  const fixIcon = (x) => { if (x && x.icon !== undefined && !iconOk(x.icon)) x.icon = 'Circle'; };
+  segs.forEach((g) => (g.beats || []).forEach((b) => (b.shots || []).forEach((sh) => {
+    ['nodes', 'items'].forEach((k) => (sh[k] || []).forEach(fixIcon)); fixIcon(sh.center); fixIcon(sh.left); fixIcon(sh.right);
+    if (sh.mover && !iconOk(sh.mover)) sh.mover = 'Circle';
+  })));
+  if (soft.length) console.log(`draft ${run + 1} small issues (accepted): ${soft.join('; ')}`);
   console.log(`draft ${run + 1}: ${total} words, intro ${introWords}, ${nShots} shots, ${Object.keys(count).length} kinds`, problems.length ? 'REJECTED: ' + problems.join('; ') : 'OK');
-  if (!problems.length) final = props; else prevProblems = problems;
+  if (!problems.length) final = props; else { prevProblems = [...problems, ...soft]; prevDraft = s; }
 }
 if (!final) throw new Error('Script rejected after 3 drafts: ' + prevProblems.join('; '));
 fs.writeFileSync(OUT, JSON.stringify(final, null, 2));
