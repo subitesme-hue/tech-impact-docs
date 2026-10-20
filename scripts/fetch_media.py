@@ -27,6 +27,7 @@ used = set(used_list)
 fresh, credits = [], []
 stats = {'pexels_http': {}, 'pixabay_http': {}, 'vision_calls': 0, 'vision_rejects': 0, 'shots': 0, 'filled': 0}
 cache = {}
+taken = set()  # ids used in this episode
 
 
 def get_json(url, headers=None, provider='x'):
@@ -127,6 +128,67 @@ def variants(q):
         yield ' '.join(w[:2])
 
 
+# ---------------- region lock: a clip/photo is used only if its own title/tags/page name the episode's region ----------------
+# (the vision model cannot tell a Kenyan maize field from a Mexican one; the uploader's description can)
+REGION_WORDS = {
+    'africa': 'africa african kenya kenyan nairobi nigeria nigerian lagos ghana ghanaian accra ethiopia ethiopian addis tanzania tanzanian '
+              'uganda ugandan kampala rwanda rwandan kigali senegal senegalese dakar morocco moroccan egypt egyptian cairo zambia malawi '
+              'mozambique zimbabwe cameroon ivory coast abidjan sudan somalia botswana namibia angola congo tunisia algeria south africa '
+              'johannesburg cape town durban maasai masai swahili zanzibar benin togo mali niger burkina sahel madagascar',
+    'middle east': 'middle east arab arabic jordan amman lebanon beirut iraq baghdad egypt cairo turkey istanbul israel palestine syria iran '
+                   'saudi riyadh jeddah uae dubai abu dhabi qatar doha kuwait bahrain oman muscat gulf desert',
+    'gcc': 'gcc gulf arab arabic saudi riyadh jeddah makkah mecca medina neom uae emirates emirati dubai abu dhabi sharjah qatar doha '
+           'kuwait bahrain manama oman muscat',
+    'south asia': 'south asia india indian delhi mumbai bangalore bengaluru kolkata chennai hyderabad pakistan pakistani karachi lahore '
+                  'bangladesh bangladeshi dhaka sri lanka colombo nepal kathmandu bhutan maldives punjab kerala rajasthan',
+    'east asia': 'east asia china chinese beijing shanghai shenzhen hong kong japan japanese tokyo osaka kyoto korea korean seoul busan '
+                 'taiwan taipei mongolia',
+    'asia pacific': 'asia pacific asian australia australian sydney melbourne new zealand indonesia indonesian jakarta bali vietnam '
+                    'vietnamese hanoi saigon thailand thai bangkok philippines filipino manila malaysia kuala lumpur singapore cambodia '
+                    'myanmar laos papua fiji',
+    'europe': 'europe european uk britain british london england scotland ireland dublin france french paris germany german berlin '
+              'munich spain spanish madrid barcelona italy italian rome milan netherlands dutch amsterdam belgium brussels sweden '
+              'stockholm norway oslo denmark copenhagen finland helsinki poland warsaw portugal lisbon austria vienna switzerland zurich '
+              'greece athens czech prague estonia',
+    'us': 'usa united states america american new york manhattan california san francisco los angeles texas houston austin chicago '
+          'seattle boston miami washington florida silicon valley',
+}
+
+
+def region_terms():
+    r = str(p.get('region', '')).lower()
+    key = next((k for k in REGION_WORDS if k in r or (k == 'us' and r in ('us', 'usa', 'united states', 'north america'))), None)
+    words = set(REGION_WORDS.get(key, '').split()) if key else set()
+    # plus every place the script itself names (map points, footage labels, thumbnail focus)
+    for g in p.get('segments', []):
+        for b in g.get('beats', []):
+            for sh in b.get('shots', []):
+                names = [pt.get('name', '') for pt in (sh.get('points') or [])] + ([sh.get('label', '')] if sh.get('kind') == 'footage' else [])
+                for nm in names:
+                    words.update(w.lower() for w in re.findall(r'[A-Za-z]{4,}', nm))
+    words.update(w.lower() for w in re.findall(r'[A-Za-z]{4,}', str(p.get('thumb', {}).get('kicker', '')).split('·')[0]))
+    words -= {'east', 'west', 'north', 'south', 'central', 'county', 'city', 'region', 'rural', 'urban', 'global', 'world'}
+    return words, key
+
+
+RTERMS, RKEY = region_terms()
+# a country-level word to add to search queries (e.g. "Kenya")
+GENERIC = {'africa', 'african', 'asia', 'asian', 'europe', 'european', 'middle', 'gulf', 'arab', 'arabic', 'america', 'american', 'pacific', 'desert'}
+labels = 3 * [sh.get('label', '') for g in p.get('segments', []) for b in g.get('beats', []) for sh in b.get('shots', []) if sh.get('kind') == 'footage']
+labels += [pt.get('name', '') for g in p.get('segments', []) for b in g.get('beats', []) for sh in b.get('shots', []) for pt in (sh.get('points') or [])]
+hits = [w for l in labels for w in re.findall(r'[A-Za-z]+', l) if w.lower() in RTERMS and w.lower() not in GENERIC and len(w) > 3]
+known = set(REGION_WORDS.get(RKEY, '').split()) if RKEY else set()
+COUNTRY = max(set(hits), key=lambda w: (w.lower() in known, hits.count(w))) if hits else (str(p.get('region', '')).split()[0] if RKEY else None)
+print('region lock:', RKEY, '| search word:', COUNTRY, '| terms:', len(RTERMS))
+
+
+def regional(c):
+    if not RTERMS:
+        return True
+    text = ' ' + re.sub(r'[^a-z ]', ' ', (c.get('desc', '') + ' ' + c.get('page', '')).lower().replace('-', ' ')) + ' '
+    return any(f' {w} ' in text for w in RTERMS)
+
+
 def vision_pick(cands, narration, query):
     """Ask a vision model which preview literally shows the line. Returns index or -1."""
     if not ORK:
@@ -190,10 +252,18 @@ def prepare_image(c, path):
     os.remove(tmp)
 
 
-def find(query, kind, need, narration):
+def find(query, kind, need, narration, local=True):
     global n
     stats['shots'] += 1
-    for q in variants(query or ''):
+    qs = list(variants(query or ''))
+    if local and COUNTRY:  # ask the libraries for the place first, e.g. "farmer phone Kenya"
+        base = [w for w in (query or '').split() if w.lower() not in RTERMS]
+        qs = [' '.join(base[:4] + [COUNTRY]), ' '.join(base[:2] + [COUNTRY])] + ([f'{COUNTRY} {RKEY}'] if RKEY and RKEY != COUNTRY.lower() else []) + qs
+    seen_q = set()
+    for q in qs:
+        if q in seen_q:
+            continue
+        seen_q.add(q)
         if not q:
             continue
         if kind == 'video':
@@ -203,7 +273,12 @@ def find(query, kind, need, narration):
         else:
             a, b = pexels_photos(q), pixabay_photos(q)
             cands = [c for pair in zip(a, b) for c in pair] + a[len(b):] + b[len(a):]
-        cands = [c for c in cands if c['id'] not in used][:10]
+        cands = [c for c in cands if c['id'] not in used]
+        if local:
+            before = len(cands)
+            cands = [c for c in cands if regional(c)]
+            stats['region_rejects'] = stats.get('region_rejects', 0) + before - len(cands)
+        cands = cands[:10]
         if not cands:
             continue
         i = vision_pick(cands, narration, q)
@@ -216,7 +291,7 @@ def find(query, kind, need, narration):
             prepare_video(c, need, path) if kind == 'video' else prepare_image(c, path)
         except Exception as e:
             print('  skip', c['id'], e); continue
-        used.add(c['id']); fresh.append(c['id'])
+        used.add(c['id']); fresh.append(c['id']); taken.add(c['id'])
         credits.append({'credit': c['credit'], 'page': c['page']})
         stats['filled'] += 1
         print(f'  {kind} "{q}" -> {c["id"]} ({c["desc"][:60]})')
@@ -231,8 +306,18 @@ if not (PEX or PIX):
 else:
     print(f'keys: pexels={"yes" if PEX else "NO"} pixabay={"yes" if PIX else "NO"} vision={"yes" if ORK else "NO"} ({VISION_MODEL})')
     th = p.get('thumb', {})
-    if th.get('query'):
-        th['media'] = find(th['query'], 'image', 0, th.get('headline', p['title']))
+    if th.get('image_url'):  # a hand-picked thumbnail photo (e.g. one already approved) wins
+        try:
+            path = os.path.join(OUT, 'thumb.jpg')
+            prepare_image({'url': th['image_url']}, path)
+            th['media'] = {'src': 'media/thumb.jpg', 'kind': 'image', 'credit': th.get('image_credit', '')}
+            if th.get('image_credit'):
+                credits.append({'credit': th['image_credit'], 'page': th.get('image_page', '')})
+            print('thumbnail: hand-picked photo')
+        except Exception as e:
+            print('thumbnail image_url failed:', e); th.pop('image_url', None)
+    if not th.get('media') and th.get('query'):  # the cover is key art: prefer a photo from the place, else the best literal match
+        th['media'] = find(th['query'], 'image', 0, th.get('headline', p['title'])) or find(th['query'], 'image', 0, th.get('headline', p['title']), local=False)
     for si, seg in enumerate(p['segments']):
         for bi, b in enumerate(seg['beats']):
             for ki, sh in enumerate(b['shots']):
@@ -241,6 +326,20 @@ else:
                 need = tl.get((si, bi, ki), 3.0) + 0.4
                 print(f'[{si}.{bi}.{ki}] footage "{sh.get("query", "")}"')
                 sh['media'] = find(sh.get('query', ''), 'video', need, b['narration']) or find(sh.get('query', ''), 'image', need, b['narration'])
+
+    # duotone backdrops behind the diagrams (EVP-studio style): one regional photo per section
+    bq = [th.get('query') or ''] + [sh.get('query', '') for g in p['segments'] for b in g['beats'] for sh in b['shots'] if sh.get('kind') == 'footage']
+    bq += [f'{COUNTRY} city skyline', f'{COUNTRY} people', f'{COUNTRY} landscape', f'{COUNTRY} street'] if COUNTRY else []
+    backs = []
+    for q in bq:
+        if len(backs) >= len(p['segments']) or not q:
+            continue
+        print(f'[backdrop] "{q}"')
+        m = find(q, 'image', 0, f"Background photo for a documentary about {p.get('tech') or p['title']} in {p.get('region')}")
+        if m:
+            backs.append(m)
+    p['backdrops'] = backs
+    print('backdrops:', len(backs))
 
 p['media_credits'] = credits
 p['media_stats'] = stats

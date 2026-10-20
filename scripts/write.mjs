@@ -118,7 +118,7 @@ HOW THESE FILMS WORK (follow exactly):
 TRUTH: use ONLY the research. Every number, name, date must come from it. Forecasts said as forecasts.
 
 STRUCTURE — "segments": exactly 7, in order:
-0) the intro, {"kind":"summary","title":"In this episode","beats":[B1,B2]}, about 30 seconds, 72-88 words: B1 = the hook (2-3 sentences, the most surprising tension, 3-4 shots); B2 = the presenter tells the viewer what this episode covers, naming all six parts naturally (one shot: {"kind":"agenda"}).
+0) the intro, {"kind":"summary","title":"In this episode","beats":[B1,B2]}, about 30 seconds, 72-88 words: B1 = the COLD OPEN (2-3 sentences, 3-4 shots). Its first sentence is 3-8 words and must stop the scroll on its own: a startling number, a stark contrast or a human moment, said like a documentary narrator (e.g. "Ninety minutes by road. Six minutes by air." / "One phone call can save a harvest."). Never open with "In", "Today", "Imagine", "Have you ever", "What if" or a question. Then name the place and the stakes; B2 = the presenter tells the viewer what this episode covers, naming all six parts naturally (one shot: {"kind":"agenda"}).
 1..6) {"kind":"chapter","title":T,"beats":[2-3 beats]} with titles: ${SECTIONS.join(' | ')} (you may sharpen wording, keep meaning and order).
 - beat = {"narration": 1-2 sentences, 12-34 words, "shots": [...]}. Number of shots in a beat = about one per 9 words (so 2-4). Every shot after the first has "at": the exact first 1-2 words of the narration where that shot starts (copied from the narration).
 - Total narration (all beats + outro): 440-520 words.
@@ -138,13 +138,13 @@ SHOT KINDS (I = an icon name from the Lucide icon set, PascalCase, e.g. Drone, H
 - {"kind":"timeline","items":[3-5 {"year","text":max 40}]}   history
 - {"kind":"kinetic","text":max 7 words,"emphasis"?:1 word}   a punchline said on screen (max 3 per episode)
 - {"kind":"device","device":"phone"|"laptop","app":max 24,"lines":[2-3 x max 48]}   an EXAMPLE of the screen a user sees (max 2 per episode)
-- {"kind":"footage","query":3-6 concrete filmable words,"label"?:place or context max 26}   real stock footage accent (max 4 per episode)
+- {"kind":"footage","query":3-6 concrete filmable words that NAME THE COUNTRY or city where the scene is (e.g. "Kenyan farmer phone maize field", "Dubai metro station crowd"),"label":the place shown, max 26}   real stock footage accent (max 4 per episode; it is only used if the clip is really from that place)
 - {"kind":"agenda"}   only in the intro
 Variety rules: never the same kind twice in a row; any kind at most 5 times (kinetic 3, device 2, footage 4); use at least 9 different kinds. Numbers in counter/compare/units/chart must come from the facts.
 
 EXAMPLE of the intro written correctly (different topic, do not copy): ${JSON.stringify(EXAMPLE)}
 
-THUMBNAIL "thumb": {"kicker":"<Country or region> · <the tech>", "headline": 5-9 words with a real number or outcome, "highlight": 1-3 words copied from the headline, "query": a striking literal photo query, "focus": {"lat","lon"} of the main place}
+THUMBNAIL "thumb": {"kicker":"<Country or region> · <the tech>", "headline": 5-9 words with a real number or outcome, "highlight": 1-3 words copied from the headline, "query": a striking literal photo query that names the country (e.g. "Kenyan farmer holding phone in field"), "focus": {"lat","lon"} of the main place}
 "title": 3-6 words.
 SOCIAL "post": "youtube_title" (max 90, truthful curiosity + keyword), "youtube_description" (2 short paragraphs, max 700 chars), "youtube_tags" (8-15), "linkedin" (120-200 words: insight-led opening, 3 takeaways incl. the business opportunity, a question, then "Watch the full episode: https://tai.news" and 3-5 hashtags), "facebook" (60-110 words, ends "Full episode on T&I News: https://tai.news" + 3 hashtags), "x" (max 200 chars, no emojis, no links, 1-2 hashtags).
 Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;

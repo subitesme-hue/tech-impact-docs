@@ -18,7 +18,7 @@ props = json.load(open(props_path, encoding='utf-8'))
 voice = os.environ.get('VOICE') or props.get('voice') or 'am_michael'
 speed = float(os.environ.get('VOICE_SPEED') or 1.1)
 MAX_SEC = float(os.environ.get('MAX_SEC', '215'))
-THUMB_SEC, BEAT_GAP, SECTION_GAP, MIN_SHOT, OUTRO_TAIL = 1.0, 0.14, 0.32, 1.1, 2.2
+THUMB_SEC, BEAT_GAP, SECTION_GAP, MIN_SHOT, OUTRO_TAIL = 1.0, 0.14, 0.75, 1.1, 2.4  # 0.75 s musical breath between sections
 
 
 def clean(t):
@@ -138,7 +138,9 @@ props['voice_engine'] = ENGINE
 props['has_logo'] = os.path.exists(os.path.join(ROOT, 'public', 'logo.png'))
 json.dump(props, open(os.path.join(ROOT, 'props.render.json'), 'w', encoding='utf-8'), ensure_ascii=False)
 json.dump({'fps': FPS, 'total_sec': total / FPS, 'summary_end_sec': summary_end,
-           'cuts': [{'t': it['start'] / FPS, 'kind': 'section' if it.get('sectionStart') else 'cut', 'item': it['kind']} for it in items[1:]]},
+           'cuts': [{'t': it['start'] / FPS, 'kind': 'section' if it.get('sectionStart') else 'cut', 'item': it['kind'],
+                    'shot': props['segments'][it['seg']]['beats'][it['beat']]['shots'][it['shot']].get('kind') if it['kind'] == 'shot' else it['kind']}
+                   for it in items[1:]]},
           open(os.path.join(work, 'timeline.json'), 'w'))
 n_shots = sum(1 for i in items if i['kind'] == 'shot')
 print(f'{ENGINE} | voice={voice} speed={speed} | {total / FPS:.1f}s, intro ends {summary_end:.1f}s, {n_shots} shots '

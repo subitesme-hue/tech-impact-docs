@@ -65,29 +65,67 @@ speech = (env > 0.01).astype('float32')
 att, rel = int(0.08 * SR), int(0.5 * SR)
 speech = np.minimum(1, uniform_filter1d(speech, rel) * 3)
 vo_rms = np.sqrt((vo[env > 0.01] ** 2).mean()) if (env > 0.01).any() else 0.1
-LOW, HIGH = 0.075, 0.2  # music level relative to voice RMS: well under the voice, a little fuller in pauses
+LOW, HIGH = 0.15, 0.48  # music: clearly present under the voice, rising to fill every pause
 gain = (HIGH - (HIGH - LOW) * speech) * vo_rms
-# swells on the thumbnail and the series ident (no narration there)
-for c in tl['cuts']:
-    if c['item'] == 'ident':
-        a, b = int(c['t'] * SR), int((c['t'] + 2.6) * SR)
-        gain[a:b] = np.maximum(gain[a:b], 0.42 * vo_rms)
-gain[:int(1.0 * SR)] = np.maximum(gain[:int(1.0 * SR)], 0.3 * vo_rms)
+gain[:int(1.0 * SR)] = np.maximum(gain[:int(1.0 * SR)], 0.55 * vo_rms)  # opening swell on the title frame
+for c in tl['cuts']:  # lift at each new section and under the outro
+    if c['kind'] == 'section' or c['item'] == 'outro':
+        a_, b_ = int((c['t'] - 0.9) * SR), int((c['t'] + 0.4) * SR)
+        gain[max(0, a_):b_] = np.maximum(gain[max(0, a_):b_], 0.5 * vo_rms)
+gain = uniform_filter1d(gain, int(0.25 * SR))  # smooth rides, no pumping
 fo = int(3 * SR)
 gain[-fo:] *= np.linspace(1, 0, fo)
 music *= gain[:, None]
 
-# ---- transition SFX
+
+# ---- sound design: synthesised (owned, no claims), placed exactly on the cuts the picture makes
+def tone(f0, dur, decay, partials=(1, 2.01, 3.02), amp=(1, .35, .15)):
+    t = np.arange(int(dur * SR)) / SR
+    w = sum(a * np.sin(2 * np.pi * f0 * k * t) for k, a in zip(partials, amp)) * np.exp(-t / decay)
+    return np.repeat((w / np.abs(w).max()).astype('float32')[:, None], 2, axis=1)
+
+
+def riser(dur):
+    t = np.arange(int(dur * SR)) / SR
+    rng = np.random.default_rng(7)
+    noise = uniform_filter1d(rng.standard_normal(len(t)).astype('float32'), 6)
+    sweep = np.sin(2 * np.pi * np.cumsum(np.linspace(180, 900, len(t))) / SR)
+    w = (0.6 * noise / np.abs(noise).max() + 0.4 * sweep) * (t / dur) ** 2.2
+    return np.repeat(w.astype('float32')[:, None], 2, axis=1)
+
+
 sfx = np.zeros((TOTAL, 2), dtype='float32')
 wh = load(os.path.join(ROOT, 'public', 'sfx', 'whoosh.wav'))
 hit = load(os.path.join(ROOT, 'public', 'sfx', 'hit.wav'))
 wh /= max(1e-6, np.abs(wh).max()); hit /= max(1e-6, np.abs(hit).max())
-for c in tl['cuts']:  # only a soft swoosh when a new section begins; ordinary cuts are clean hard cuts
-    if c['kind'] != 'section':
-        continue
-    i = max(0, int((c['t'] - 0.3) * SR))
-    j = min(TOTAL, i + len(wh))
-    sfx[i:j] += wh[:j - i] * 0.06
+blip = tone(1320, 0.35, 0.07)
+pulse = tone(55, 1.2, 0.35, (1, 2), (1, .3))
+rise = riser(0.9)
+R = vo_rms
+
+
+def put(clip, t, level):
+    i = int(t * SR)
+    if i < 0:
+        clip, i = clip[-i:], 0
+    j = min(TOTAL, i + len(clip))
+    if j > i:
+        sfx[i:j] += clip[:j - i] * level * R
+
+
+put(hit, 1.0, 0.9); put(pulse, 1.0, 0.7)  # cold open lands with an impact as the narration starts
+for c in tl['cuts']:
+    t, k = c['t'], c.get('shot')
+    if c['kind'] == 'section':
+        put(rise, t - 0.9, 0.35); put(wh, t - 0.25, 0.45); put(pulse, t, 0.45)
+    elif k == 'kinetic':
+        put(hit, t, 0.5)
+    elif k in ('counter', 'compare', 'units', 'chart'):
+        put(blip, t + 0.05, 0.22)
+    elif k in ('globe', 'route', 'footage', 'agenda'):
+        put(wh, t - 0.2, 0.25)
+    elif k == 'outro':
+        put(hit, t, 0.6); put(pulse, t, 0.5)
 
 mix = vo + music + sfx
 mix /= max(1.0, np.abs(mix).max() / 0.95)

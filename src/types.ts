@@ -48,6 +48,7 @@ export type DocProps = {
   segments: Segment[];
   outro: {narration: string; line?: string};
   has_logo?: boolean;
+  backdrops?: Media[];
   timeline?: {fps: number; total: number; summaryEnd: number; items: TimelineItem[]};
 };
 

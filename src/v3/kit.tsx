@@ -1,5 +1,5 @@
 import React from 'react';
-import {AbsoluteFill, interpolate, useCurrentFrame, Easing} from 'remotion';
+import {AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame, Easing} from 'remotion';
 import * as Lucide from 'lucide-react';
 import {Look, SANS, DISPLAY, MONO} from '../theme';
 
@@ -35,12 +35,34 @@ export const Title: React.FC<{children: React.ReactNode; look: Look; p: number; 
 export const Source: React.FC<{text?: string; look: Look; p: number}> = ({text, look, p}) =>
   text ? <div style={{position: 'absolute', right: 120, bottom: 70, fontFamily: MONO, fontSize: 19, letterSpacing: 2, color: look.dim, opacity: 0.8 * p}}>SOURCE · {text.toUpperCase()}</div> : null;
 
+// Regional photo shown behind the diagrams of one section, as a duotone (EVP-studio style). Set per shot by Doc3.
+export const BackdropCtx = React.createContext<string | undefined>(undefined);
+
+// Duotone: grayscale photo multiplied onto a shadow->accent gradient, so it carries the episode palette.
+export const Duotone: React.FC<{src: string; look: Look; dur: number; strength?: number}> = ({src, look, dur, strength = 1}) => {
+  const f = useCurrentFrame();
+  const s = 1.06 + 0.06 * easeIO(f, 0, Math.max(1, dur));
+  return (
+    <AbsoluteFill style={{overflow: 'hidden', opacity: strength}}>
+      <AbsoluteFill style={{background: `linear-gradient(120deg, ${look.bg} 0%, ${look.panel} 45%, ${look.accent} 130%)`}} />
+      <Img src={src.startsWith('http') ? src : staticFile(src)} style={{position: 'absolute', width: '100%', height: '100%', objectFit: 'cover',
+        filter: 'grayscale(1) contrast(1.25) brightness(1.05)', mixBlendMode: 'screen', opacity: 0.55, transform: `scale(${s})`}} />
+    </AbsoluteFill>
+  );
+};
+
 // Shared cinematic stage behind every diagram: deep gradient, faint dot grid, vignette, slow camera push.
 export const Stage: React.FC<{look: Look; dur: number; children?: React.ReactNode; push?: number}> = ({look, dur, children, push = 0.05}) => {
   const f = useCurrentFrame();
   const s = 1 + push * easeIO(f, 0, Math.max(1, dur));
+  const back = React.useContext(BackdropCtx);
   return (
     <AbsoluteFill style={{background: `radial-gradient(ellipse at 50% 45%, ${look.panel} 0%, ${look.bg} 72%)`, overflow: 'hidden'}}>
+      {back ? <>
+        <Duotone src={back} look={look} dur={dur} strength={0.6} />
+        {/* keep the diagram readable: darken the middle where the content sits */}
+        <AbsoluteFill style={{background: `radial-gradient(ellipse at 55% 50%, ${look.bg}d9 0%, ${look.bg}a6 55%, ${look.bg}59 100%)`}} />
+      </> : null}
       <AbsoluteFill style={{backgroundImage: 'radial-gradient(rgba(255,255,255,0.09) 1.2px, transparent 1.2px)', backgroundSize: '42px 42px',
         transform: `scale(${s * 1.02})`}} />
       <AbsoluteFill style={{transform: `scale(${s})`}}>{children}</AbsoluteFill>

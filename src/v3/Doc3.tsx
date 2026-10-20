@@ -7,9 +7,28 @@ import {UiExample} from '../scenes/Examples';
 import {Logo} from '../scenes/Brand';
 import {Globe, Route} from './maps';
 import {Chart, Compare, Counter, Flow, FootageShot, Icons, Kinetic, Network, Steps, Timeline, Units} from './diagrams';
-import {Label, Stage, ease} from './kit';
+import {BackdropCtx, Duotone, Label, Stage, ease} from './kit';
 
-const ShotView: React.FC<{s: Shot; look: Look; dur: number; seed: number; sections: string[]; p: DocProps}> = ({s, look, dur, seed, sections, p}) => {
+// No regional footage found: the section's regional photo in duotone with the place callout (never a clip from the wrong country).
+const PlaceShot: React.FC<{look: Look; dur: number; back?: string; label?: string}> = ({look, dur, back, label}) => {
+  const f = useCurrentFrame();
+  if (!back) return <Stage look={look} dur={dur}>{label ? <AbsoluteFill style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+    <Label size={44} style={{opacity: ease(f, 4, 16)}}>{label}</Label></AbsoluteFill> : null}</Stage>;
+  return (
+    <AbsoluteFill style={{background: look.bg}}>
+      <Duotone src={back} look={look} dur={dur} />
+      <AbsoluteFill style={{background: 'linear-gradient(0deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 40%)'}} />
+      {label ? (
+        <div style={{position: 'absolute', left: 130, bottom: 140, display: 'flex', alignItems: 'center', gap: 20, opacity: ease(f, 8, 20)}}>
+          <div style={{width: 80 * ease(f, 6, 20), height: 2, background: look.accent}} />
+          <Label size={30}>{label}</Label>
+        </div>
+      ) : null}
+    </AbsoluteFill>
+  );
+};
+
+const ShotView: React.FC<{s: Shot; look: Look; dur: number; seed: number; sections: string[]; p: DocProps; back?: string}> = ({s, look, dur, seed, sections, p, back}) => {
   switch (s.kind) {
     case 'globe': return <Globe look={look} dur={dur} focus={s.focus} region={s.region || p.region} points={s.points} arcs={s.arcs} label={s.label} />;
     case 'route': return <Route look={look} dur={dur} points={s.points} mover={s.mover} compare={s.compare} label={s.label} />;
@@ -24,7 +43,8 @@ const ShotView: React.FC<{s: Shot; look: Look; dur: number; seed: number; sectio
     case 'timeline': return <Timeline look={look} dur={dur} items={s.items} />;
     case 'kinetic': return <Kinetic look={look} dur={dur} text={s.text} emphasis={s.emphasis} />;
     case 'device': return <UiExample look={look} seed={seed} dur={dur} v={{type: 'ui', variant: s.device === 'phone' ? 'notify' : 'list', app: s.app, lines: s.lines}} />;
-    case 'footage': return <FootageShot look={look} dur={dur} media={s.media} label={s.label} seed={seed} />;
+    case 'footage': return s.media ? <FootageShot look={look} dur={dur} media={s.media} label={s.label} seed={seed} />
+      : <PlaceShot look={look} dur={dur} back={back} label={s.label} />;
     case 'agenda': return <Agenda look={look} dur={dur} items={sections} tech={p.title || p.tech || ''} />;
     default: return <Stage look={look} dur={dur} />;
   }
@@ -126,7 +146,11 @@ export const Doc3: React.FC<DocProps> = (p) => {
         else if (it.kind === 'outro') body = <Outro3 p={p} look={look} dur={it.dur} />;
         else {
           const s = p.segments[it.seg!].beats[it.beat!].shots[it.shot!];
-          body = <ShotView s={s} look={look} dur={it.dur} seed={i * 17 + 3} sections={sections} p={p} />;
+          const bs = p.backdrops || [];
+          const back = bs.length ? bs[it.seg! % bs.length].src : undefined;
+          // maps keep their own clean cartography; everything else sits on the section's duotone photo
+          const useBack = back && !['globe', 'route', 'footage'].includes(s.kind) ? back : undefined;
+          body = <BackdropCtx.Provider value={useBack}><ShotView s={s} look={look} dur={it.dur} seed={i * 17 + 3} sections={sections} p={p} back={back} /></BackdropCtx.Provider>;
         }
         return <Sequence key={i} from={it.start} durationInFrames={it.dur} name={`${it.kind}-${i}`}>{body}</Sequence>;
       })}
