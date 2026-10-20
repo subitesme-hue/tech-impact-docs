@@ -26,12 +26,18 @@ jobs:
         with:
           node-version: '22'
       - name: Pick today's topic
+        env:
+          SCHEDULED: ${{ github.event_name == 'schedule' && 'true' || 'false' }}
         run: node scripts/pick_topic.mjs
       - name: Start the render
         env:
           GH_TOKEN: ${{ github.token }}
           POST: ${{ github.event_name == 'schedule' && 'true' || inputs.post }}
         run: |
+          if [ -s reuse.json ]; then
+            gh workflow run post.yml --ref main -f tag="$(node -p "require('./reuse.json').tag")" -f post_at="$(node -p "require('./reuse.json').post_at")"
+            echo "Scheduled posting of today's rendered episode"; exit 0
+          fi
           if [ ! -s topic.json ]; then echo "Nothing to do today."; exit 0; fi
           TAG=$(node -p "require('./topic.json').tag")
           VOICE=$(node -p "require('./topic.json').voice")

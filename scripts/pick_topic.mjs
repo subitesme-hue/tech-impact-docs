@@ -24,9 +24,19 @@ const DAY = 86400000, DUBAI = 4 * 3600000;
 const now = Date.now();
 const day = Math.floor((now + DUBAI) / DAY);
 const date = new Date(now + DUBAI).toISOString().slice(0, 10);
-if (CFG.skip_dates.includes(date) || rows.some((r) => r.date === date)) {
+fs.writeFileSync('reuse.json', '');
+if (CFG.skip_dates.includes(date) || rows.some((r) => r.date === date && r.post !== 'false')) {
   console.log(`No episode needed for ${date} (skip date or already made).`);
   fs.writeFileSync('topic.json', '');
+  process.exit(0);
+}
+// A test render made earlier today (post=false) becomes tonight's episode: post it instead of rendering again.
+const preview = rows.filter((r) => r.date === date && r.post === 'false').pop();
+if (preview && process.env.SCHEDULED === 'true') {
+  const [yy, mm, dd] = date.split('-').map(Number);
+  fs.writeFileSync('reuse.json', JSON.stringify({tag: preview.tag, post_at: new Date(Date.UTC(yy, mm - 1, dd, CFG.post_hour_dubai - 4, CFG.post_minute)).toISOString()}));
+  fs.writeFileSync('topic.json', '');
+  console.log(`Posting today's already-rendered episode ${preview.tag}`);
   process.exit(0);
 }
 const lastDate = rows.map((r) => r.date).sort().pop();
