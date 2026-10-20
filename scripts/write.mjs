@@ -142,7 +142,7 @@ SHOT KINDS (I = an icon name from the Lucide icon set, PascalCase, e.g. Drone, H
 - {"kind":"flow","nodes":[2-4 {"icon":I,"label":max 22}],"mover":I,"label"?:max 34}   how it works, step to step
 - {"kind":"counter","value":number,"from"?:number,"prefix"?:"$","suffix"?:"%"|"+"|" kg"|"B"|"M"...,"decimals"?:0-1,"label":max 52,"icon"?:I,"source"?:"Org, year"}   one big number
 - {"kind":"compare","title"?:max 40,"left":{"icon":I,"label":max 26,"value":max 8},"right":{"icon":I,"label":max 26,"value":max 8}}   before/after, A vs B
-- {"kind":"units","total":10|20|50|100,"highlight":number,"icon":I,"label":max 52}   "1 in 5", percentages
+- {"kind":"units","total":10|20|50|100,"highlight":number,"icon":I,"label":max 52}   ONLY for a share the research states (a percentage or "1 in 5"); never for plain counts
 - {"kind":"chart","chart":"line"|"bar","title":max 40,"prefix"?:"$","unit"?:"B"|"%"|"M"|...,"points":[2-6 {"label":max 14,"value":number}],"source"?:"Org, year"}   trends over time
 - {"kind":"steps","items":[3-4 {"icon":I,"label":max 22}]}   a process or rollout
 - {"kind":"network","center":{"icon":I,"label":max 26},"nodes":[3-6 {"icon":I,"label":max 20}]}   ecosystem, who benefits
@@ -152,7 +152,7 @@ SHOT KINDS (I = an icon name from the Lucide icon set, PascalCase, e.g. Drone, H
 - {"kind":"device","device":"phone"|"laptop","app":max 24,"lines":[2-3 x max 48]}   an EXAMPLE of the screen a user sees (max 2 per episode)
 - {"kind":"footage","query":3-6 concrete filmable words that NAME THE COUNTRY or city where the scene is (e.g. "Kenyan farmer phone maize field", "Dubai metro station crowd"),"label":the place shown, max 26}   real stock footage accent (max 4 per episode; it is only used if the clip is really from that place)
 - {"kind":"agenda"}   only in the intro
-Variety rules: never the same kind twice in a row; any kind at most 5 times (kinetic 3, device 2, footage 4); use at least 9 different kinds. Numbers in counter/compare/units/chart must come from the facts.
+Variety rules: never the same kind twice in a row; any kind at most 5 times (kinetic 3, device 2, footage 4, globe 3, route 2); use at least 9 different kinds. Numbers in counter/compare/units/chart must come from the facts.
 
 EXAMPLE of the intro written correctly (different topic, do not copy): ${JSON.stringify(EXAMPLE)}
 
@@ -202,14 +202,20 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
       if (sh.mover) icons.push(sh.mover);
       if (sh.kind === 'counter' && !numOk(sh.value)) problems.push(`counter ${sh.value} not in research`);
       if (sh.kind === 'chart') (sh.points || []).forEach((p) => { if (!numOk(p.value)) problems.push(`chart value ${p.value} not in research`); });
-      if (sh.kind === 'units' && !(isFinite(sh.highlight) && isFinite(sh.total))) problems.push('units needs total and highlight');
+      if (sh.kind === 'units') {
+        // a unit chart says "X in Y": only allowed when the research states that share (e.g. 22%, "1 in 5"), never for plain counts
+        const h = Number(sh.highlight), tot = Number(sh.total), pct = Math.round((h / tot) * 100);
+        const share = [`${pct}%`, `${pct} %`, `${pct} per cent`, `${pct} percent`, `${h} in ${tot}`, `${h} of ${tot}`, `${h} out of ${tot}`];
+        if (!(isFinite(h) && isFinite(tot))) problems.push('units needs total and highlight');
+        else if (!share.some((x) => researchText.toLowerCase().includes(x))) problems.push(`units "${h} in ${tot}" is not a share stated in the research (use units only for real percentages/ratios; use counter or compare for counts)`);
+      }
       if ((sh.kind === 'globe' && !(sh.focus && isFinite(sh.focus.lat))) || (sh.kind === 'route' && !(sh.points || []).every((p) => isFinite(p.lat) && isFinite(p.lon)))) problems.push(`${sh.kind}: needs real lat/lon`);
       if (sh.kind === 'footage' && String(sh.query || '').split(/\s+/).length < 3) problems.push('footage query needs 3+ concrete words');
     });
   });
   const bad = icons.filter((n) => !iconOk(n));
   if (bad.length) soft.push(`unknown icon names: ${[...new Set(bad)].slice(0, 8).join(', ')} (use Lucide PascalCase names)`);
-  const caps = {kinetic: 3, device: 2, footage: 4, agenda: 1};
+  const caps = {kinetic: 3, device: 2, footage: 4, agenda: 1, globe: 3, route: 2};
   Object.entries(count).forEach(([k, n]) => { if (n > (caps[k] || 5)) problems.push(`${k} used ${n} times (max ${caps[k] || 5})`); });
   if (Object.keys(count).length < 9) problems.push(`only ${Object.keys(count).length} different shot kinds (need 9+)`);
   if (!count.agenda) problems.push('intro needs an agenda shot');
