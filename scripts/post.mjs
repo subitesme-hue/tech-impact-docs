@@ -36,12 +36,6 @@ const upload = async (file, name) => {
 
 const create = (body) => call(`${BASE}/posts`, {method: 'POST', headers: {...auth, 'Content-Type': 'application/json'}, body: JSON.stringify(body)});
 
-// Optional: hold until the scheduled minute (renders start ~2 h early).
-if (post.post_at) {
-  const wait = new Date(post.post_at).getTime() - Date.now();
-  if (wait > 0) { console.log(`waiting ${(wait / 60000).toFixed(1)} min until ${post.post_at}`); await sleep(wait); }
-}
-
 // YouTube chapters from the real edit timeline (first one must be 0:00).
 const yt = post.main?.platform_content?.youtube;
 if (yt && props.timeline) {
@@ -54,7 +48,12 @@ if (yt && props.timeline) {
 
 const results = {};
 // ---- 1. full film
-const mainMedia = await upload('out/video.mp4', `${props.id}.mp4`);
+const mainMedia = await upload('out/video.mp4', `${props.id}.mp4`); // upload first, so the post goes out right on time
+// Hold until the scheduled minute (renders start ~2 h early).
+if (post.post_at) {
+  const wait = new Date(post.post_at).getTime() - Date.now();
+  if (wait > 0) { console.log(`waiting ${(wait / 60000).toFixed(1)} min until ${post.post_at}`); await sleep(wait); }
+}
 const main = await create({media_ids: [mainMedia], account_ids: post.main.account_ids, content: post.main.content,
   platform_content: post.main.platform_content || {}});
 const postId = main?.data?.post_id || main?.data?.id;
