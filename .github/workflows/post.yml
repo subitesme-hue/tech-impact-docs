@@ -11,6 +11,10 @@ on:
         description: 'Publish time, ISO UTC (e.g. 2026-10-20T07:00:00Z). Blank = now. The job waits (max ~5 h), so dispatch it within 5 h of the time.'
         required: false
         default: ''
+      x_text:
+        description: 'Optional X hook (max 35 characters); the episode link is added on the next line'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -39,10 +43,18 @@ jobs:
         env:
           PE_API_KEY: ${{ secrets.PE_API_KEY }}
           PE_BASE_URL: ${{ vars.PE_BASE_URL }}
+          POST_AT: ${{ inputs.post_at }}
+          X_TEXT: ${{ inputs.x_text }}
         run: |
           echo "PE_API_KEY set: $([ -n "$PE_API_KEY" ] && echo yes || echo NO)" | tee out/logs/post.log
-          # publish time comes from this run's input (blank = now), not from the render
-          POST_AT="${{ inputs.post_at }}" node -e "const f='props.render.json',fs=require('fs');const p=JSON.parse(fs.readFileSync(f));if(p.post)p.post.post_at=process.env.POST_AT||'';fs.writeFileSync(f,JSON.stringify(p))"
+          # publish time comes from this run's input (blank = now); caption rules: Facebook = full LinkedIn caption, X hook <= 35 chars
+          node -e "
+          const f='props.render.json',fs=require('fs');const p=JSON.parse(fs.readFileSync(f));const po=p.post;
+          if(po){po.post_at=process.env.POST_AT||'';
+            const li=po.main?.platform_content?.linkedin?.content; if(li){po.main.content=li; po.main.platform_content.facebook={content:li};}
+            if(process.env.X_TEXT&&po.x) po.x.content=process.env.X_TEXT.slice(0,35);
+            console.log('post_at',po.post_at,'| X:',po.x&&po.x.content);}
+          fs.writeFileSync(f,JSON.stringify(p))"
           set -o pipefail
           node scripts/post.mjs props.render.json 2>&1 | tee -a out/logs/post.log
 

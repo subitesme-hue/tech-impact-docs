@@ -89,7 +89,7 @@ if (post.x?.account_ids?.length && fs.existsSync('out/cover.jpg')) {
     if (!xMedia) throw new Error('image upload returned no media id: ' + JSON.stringify(up).slice(0, 300));
     console.log('uploaded cover.jpg ->', xMedia, up.data?.media_status || '');
     const link = ytUrl || 'https://tai.news';
-    const text = `${post.x.content}\n\n${post.x.reply_prefix || 'Watch the full episode:'} ${link}`;
+    const text = `${post.x.content}\n${link}`; // hook (max 35 characters) + the episode link
     results.x = await create({media_ids: [xMedia], account_ids: post.x.account_ids, content: text,
       platform_content: {x: {content: text}}});
     console.log('X post created');

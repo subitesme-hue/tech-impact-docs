@@ -158,7 +158,7 @@ EXAMPLE of the intro written correctly (different topic, do not copy): ${JSON.st
 
 THUMBNAIL "thumb": {"kicker":"<Country or region> · <the tech>", "headline": 5-9 words with a real number or outcome, "highlight": 1-3 words copied from the headline, "query": a striking literal photo query that names the country (e.g. "Kenyan farmer holding phone in field"), "focus": {"lat","lon"} of the main place}
 "title": 3-6 words.
-SOCIAL "post": "youtube_title" (max 90, truthful curiosity + keyword), "youtube_description" (2 short paragraphs, max 700 chars), "youtube_tags" (8-15), "linkedin" (120-200 words: insight-led opening, 3 takeaways incl. the business opportunity, a question, then "Watch the full episode: https://tai.news" and 3-5 hashtags), "facebook" (60-110 words, ends "Full episode on T&I News: https://tai.news" + 3 hashtags), "x" (max 200 chars, no emojis, no links, 1-2 hashtags).
+SOCIAL "post": "youtube_title" (max 90, truthful curiosity + keyword), "youtube_description" (2 short paragraphs, max 700 chars), "youtube_tags" (8-15), "linkedin" (120-200 words: insight-led opening, 3 takeaways incl. the business opportunity, a question, then "Watch the full episode: https://tai.news" and 3-5 hashtags), "x" (a hook of AT MOST 35 characters including spaces, no emojis, no links, no hashtags, must be true to the research).
 Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
   let user = `Region: ${t.region}\nResearch (the only facts you may use):\n${JSON.stringify(res.research)}`;
   if (prevDraft) user += `\n\nYOUR PREVIOUS DRAFT:\n${JSON.stringify(prevDraft)}\n\nIt was rejected for: ${prevProblems.join('; ')}.\nReturn the full corrected JSON. Change only what is needed to fix these problems; keep everything else.`;
@@ -214,6 +214,7 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
   if (Object.keys(count).length < 9) problems.push(`only ${Object.keys(count).length} different shot kinds (need 9+)`);
   if (!count.agenda) problems.push('intro needs an agenda shot');
   if (!s.thumb || words(s.thumb.headline) < 4) problems.push('thumbnail headline missing');
+  if (String(s.post?.x || '').trim().length > 35) problems.push(`x hook is ${String(s.post?.x || '').trim().length} characters (max 35)`);
   const banned = /\b(delve|tapestry|testament|realm|unlock|harness|leverage|revolutioni[sz]e|game-changer|seamless|cutting-edge|synergy|ever-evolving)\b/i;
   beats.forEach((b, i) => { if (banned.test(b.narration)) problems.push(`beat ${i + 1}: banned word`); });
 
@@ -229,15 +230,15 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
       post_at: t.post_at,
       main: {
         account_ids: [cfg.accounts.facebook, cfg.accounts.linkedin, cfg.accounts.youtube],
-        content: cut(p.facebook, 2000),
+        content: cut(p.linkedin, 2000), // Facebook gets the full LinkedIn-style caption (user's choice)
         platform_content: {
-          facebook: {content: cut(p.facebook, 2000)},
+          facebook: {content: cut(p.linkedin, 2900)},
           linkedin: {content: cut(p.linkedin, 2900)},
           youtube: {content: ytDesc.slice(0, 4900), settings: {title: cut(p.youtube_title || s.title, 95), privacyStatus: 'public',
             tags: (p.youtube_tags || []).slice(0, 15).map((x) => cut(x, 30)), categoryId: '28', madeForKids: false}},
         },
       },
-      x: {account_ids: [cfg.accounts.x], content: cut(String(p.x || '').replace(/https?:\/\/\S+/g, '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, ''), 200),
+      x: {account_ids: [cfg.accounts.x], content: cut(String(p.x || '').replace(/https?:\/\/\S+/g, '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim(), 35),
         reply_prefix: 'Watch the full episode:'},
     },
   };
