@@ -181,7 +181,7 @@ export const Doc3: React.FC<DocProps> = (p) => {
             <SectionWipe look={look} title={sections[sec]} n={sec + 1} /></Sequence> : null}
         </React.Fragment>;
       })}
-      {activeSection >= 0 && curShot?.kind !== 'agenda' ? <Rail look={look} sections={sections} active={activeSection} /> : null}
+      {activeSection >= 0 && !['agenda', 'footage', 'device'].includes(curShot?.kind || '') ? <Rail look={look} sections={sections} active={activeSection} /> : null}
       <AbsoluteFill style={{pointerEvents: 'none', backgroundImage: `url(${staticFile('grain.png')})`, mixBlendMode: look.mode === 'dark' ? 'overlay' : 'multiply', opacity: look.mode === 'dark' ? 0.07 : 0.05,
         backgroundPosition: `${(f * 37) % 512}px ${(f * 91) % 512}px`}} />
     </AbsoluteFill>
