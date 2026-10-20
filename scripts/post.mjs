@@ -2,7 +2,7 @@
 // 1) POST /media/upload {filename, content_type, size} -> data.media_id, data.upload_url
 // 2) PUT raw bytes to upload_url   3) POST /media/{id}/complete   4) POST /posts {...}
 // Full film -> Facebook 7748, T&I News LinkedIn 9116, YouTube 7751 (one post).
-// X 7747 -> the 30 s summary only (X caps video at 2:20), with the YouTube link in a reply (firstComment).
+// X 7747 -> the thumbnail image with the YouTube link in the post.
 // Field names checked against posteverywhere.ai/docs (platforms/youtube, platforms/x-twitter, media-requirements).
 import fs from 'node:fs';
 
@@ -77,15 +77,22 @@ for (let i = 0; i < 30 && postId; i++) {
 }
 console.log('YouTube link:', ytUrl || '(not available yet, using tai.news)');
 
-// ---- 3. X: summary clip + link in reply
+// ---- 3. X: the thumbnail image + the link to the full episode in the post itself.
+// Image upload = PostEverywhere "direct mode": multipart/form-data with field `file`; completes in one request, no /complete
+// (posteverywhere.ai/docs/api/init-media-upload + openapi.json; X images <= 5 MB, 16:9 is standard: media-requirements).
 let failed = false;
-if (post.x?.account_ids?.length && fs.existsSync('out/summary.mp4')) {
+if (post.x?.account_ids?.length && fs.existsSync('out/cover.jpg')) {
   try {
-    const xMedia = await upload('out/summary.mp4', `${props.id}-summary.mp4`);
+    const form = new FormData();
+    form.append('file', new Blob([fs.readFileSync('out/cover.jpg')], {type: 'image/jpeg'}), `${props.id}-cover.jpg`);
+    const up = await call(`${BASE}/media/upload`, {method: 'POST', headers: auth, body: form});
+    const xMedia = up.data?.media_id || up.data?.id;
+    if (!xMedia) throw new Error('image upload returned no media id: ' + JSON.stringify(up).slice(0, 300));
+    console.log('uploaded cover.jpg ->', xMedia, up.data?.media_status || '');
     const link = ytUrl || 'https://tai.news';
-    const reply = `${post.x.reply_prefix || 'Watch the full documentary:'} ${link}`;
-    results.x = await create({media_ids: [xMedia], account_ids: post.x.account_ids, content: post.x.content,
-      platform_content: {x: {content: post.x.content, settings: {replySettings: 'everyone', firstComment: reply}}}});
+    const text = `${post.x.content}\n\n${post.x.reply_prefix || 'Watch the full episode:'} ${link}`;
+    results.x = await create({media_ids: [xMedia], account_ids: post.x.account_ids, content: text,
+      platform_content: {x: {content: text}}});
     console.log('X post created');
   } catch (e) { console.error('X post FAILED (other platforms already posted):', e.message); failed = true; }
 }

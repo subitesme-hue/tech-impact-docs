@@ -2,7 +2,7 @@
 
 Usage: python3 scripts/render.py props.json
 Steps: voice + timeline -> stock media -> Remotion (silent) -> music/SFX mix -> mux at -14 LUFS
-       -> out/video.mp4 (full film), out/summary.mp4 (the 30 s summary, for X), out/cover.jpg (frame 0 thumbnail).
+       -> out/video.mp4 (full film), out/cover.jpg (frame 0 thumbnail).
 Env: VOICE, PEXELS_API_KEY, PIXABAY_API_KEY, CONCURRENCY (default 4), BROWSER_EXECUTABLE (optional).
 """
 import json, os, subprocess, sys
@@ -37,11 +37,8 @@ video = os.path.join(out, 'video.mp4')
 run(['ffmpeg', '-v', 'error', '-y', '-i', silent, '-i', os.path.join(work, 'mix.wav'), '-map', '0:v', '-map', '1:a', '-c:v', 'copy',
      '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-shortest', '-movflags', '+faststart', video])
 
-# The 30-second summary on its own (X only accepts 2 min 20 s): cut right before the series ident, fade out.
+# Intro length (for meta only; X now gets the thumbnail + link, so no separate summary clip is made).
 end = round(tl['summary_end_sec'] + 0.3, 2)
-run(['ffmpeg', '-v', 'error', '-y', '-i', video, '-t', str(end), '-vf', f'fade=t=out:st={end - 0.5}:d=0.5',
-     '-af', f'afade=t=out:st={end - 0.7}:d=0.7', '-c:v', 'libx264', '-preset', 'fast', '-crf', '20', '-maxrate', '8M', '-bufsize', '16M', '-c:a', 'aac', '-b:a', '160k',
-     '-movflags', '+faststart', os.path.join(out, 'summary.mp4')])
 
 # Frame 0 is the designed thumbnail.
 run(['ffmpeg', '-v', 'error', '-y', '-i', video, '-frames:v', '1', '-q:v', '2', os.path.join(out, 'cover.jpg')])

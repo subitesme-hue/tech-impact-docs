@@ -139,14 +139,14 @@ jobs:
           set -o pipefail
           python3 scripts/render.py props.json 2>&1 | tee -a out/logs/render.log
 
-      - name: Publish release (video, summary, thumbnail)
+      - name: Publish release (video, thumbnail)
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
         run: |
           cp props.render.json out/props.json; [ -f research.json ] && cp research.json out/research.json || true
           TITLE=$(python3 -c "import json;print(json.load(open('props.json'))['title'])")
-          gh release create "$TAG" out/video.mp4 out/summary.mp4 out/cover.jpg out/meta.json out/props.json $(ls out/research.json 2>/dev/null) \
+          gh release create "$TAG" out/video.mp4 out/cover.jpg out/meta.json out/props.json $(ls out/research.json 2>/dev/null) \
             --title "$TITLE" --notes "Rendered by run ${{ github.run_id }}"
 
       - name: Remember used stock clips (no repeats across days)

@@ -27,7 +27,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p out/logs
-          gh release download "${{ inputs.tag }}" -D out -p video.mp4 -p summary.mp4 -p props.json -p cover.jpg
+          gh release download "${{ inputs.tag }}" -D out -p video.mp4 -p props.json -p cover.jpg
           mv out/props.json props.render.json
           ls -la out
 
