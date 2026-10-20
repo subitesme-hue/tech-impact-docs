@@ -31,6 +31,25 @@ before the built-in generated beds. (Licensed overlay/transition clips can be wi
 | [Broadcast Background](https://motionarray.com/stock-video/broadcast-background-2191074/) | News-studio looping background | outro / ident background |
 | [3D Technology World Map](https://motionarray.com/stock-video/3d-technology-world-map-2180946/) | Dotted digital world map with glowing hot spots | `WorldMap` scene |
 
+## YouTube references you shared (studied frame by frame)
+| Reference | What we took from it | Where it lives now |
+|---|---|---|
+| [jOsI3ghC6zQ](https://www.youtube.com/watch?v=jOsI3ghC6zQ) | Podcast-style opening: the presenter says what the episode covers | 30 s intro = cold open + agenda reel (`AgendaReel`) |
+| [wU_bmWb6bhg](https://www.youtube.com/watch?v=wU_bmWb6bhg) | Independent-documentary voice: tension → explanation → stakes | writer prompt (story arc, cold-open rules) |
+| [28TGfTZweqw](https://www.youtube.com/watch?v=28TGfTZweqw) | Text only as on-screen examples (UI windows), never captions | `device` shot (phone / laptop example screens) |
+| [cQ9X8U68zM4](https://www.youtube.com/watch?v=cQ9X8U68zM4) | What NOT to do: don't copy its viewfinder frame/HUD | no HUD frame in any family |
+| [jAa58N4Jlos](https://www.youtube.com/watch?v=jAa58N4Jlos) | Hard cuts every ~2–4 s, each picture literally shows the words | cut-on-the-word timing (`voice.py` cues), max ~14 words per picture |
+| [G4H1N_yXBiA](https://www.youtube.com/watch?v=G4H1N_yXBiA) | Nat Geo explainer: diagrams, left chapter rail, one consistent style | Night family, section rail, maps & diagrams |
+| [6ctQqDG6l4A](https://www.youtube.com/watch?v=6ctQqDG6l4A) | Warm single grade, tracked titles with callout lines | footage callout labels, one grade per episode |
+| [0dLBro4qt6Y](https://www.youtube.com/watch?v=0dLBro4qt6Y) | Beat-synced cuts, smooth camera moves | sound design on cuts, continuous section backdrops |
+
+## Your own films (Projects/my-video on your computer)
+| Reference | What we took from it | Where it lives now |
+|---|---|---|
+| RiyadaX9 brand film (`out/riyadax9-brand-film.mp4`) | Heavy headline + one italic serif accent word, blur-to-sharp word reveal, odometer-rolling numbers, 3–4 s scenes | `AgendaReel` (intro), accent words in Editorial/Blueprint |
+| RiyadaX9 daily series (`out/day-01…42.mp4`) | Minimal light-paper layouts, one accent phrase, strike-through contrast | Editorial family |
+| (excluded on purpose) the corner-bracket HUD + timecode | you asked not to copy that frame | — |
+
 ## Visual families (rotate daily, never the same family two days running)
 | Family | Built from these references | What changes |
 |---|---|---|
