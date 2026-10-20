@@ -1,4 +1,33 @@
 [
-  {"date": "2026-10-20", "region": "Africa", "sector": "Agriculture", "look": 1, "format": "explainer", "voice": "am_michael", "tag": "ep-2026-10-20-v3-test4", "title": "AI Advisers For African Farmers"},
-  {"date": "2026-10-20", "region": "South Asia", "sector": "Climate and environment", "look": 6, "format": "follow-the-money", "voice": "bf_emma", "tag": "ep-2026-10-20-south-asia-v2", "title": "AI Flood Warnings, South Asia"}
+ {
+  "date": "2026-10-20",
+  "region": "Africa",
+  "sector": "Agriculture",
+  "look": 1,
+  "format": "explainer",
+  "voice": "am_michael",
+  "tag": "ep-2026-10-20-v3-test4",
+  "title": "AI Advisers For African Farmers"
+ },
+ {
+  "date": "2026-10-20",
+  "region": "South Asia",
+  "sector": "Climate and environment",
+  "look": 6,
+  "format": "follow-the-money",
+  "voice": "bf_emma",
+  "tag": "ep-2026-10-20-south-asia-v2",
+  "title": "AI Flood Warnings, South Asia"
+ },
+ {
+  "date": "2026-10-21",
+  "region": "Middle East",
+  "sector": "Energy",
+  "look": 4,
+  "format": "then-now-next",
+  "voice": "af_bella",
+  "tag": "doc-2026-10-21-middle-east-energy",
+  "title": "Solar After Sunset",
+  "post": "false"
+ }
 ]
