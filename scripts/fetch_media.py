@@ -189,6 +189,20 @@ def regional(c):
     return any(f' {w} ' in text for w in RTERMS)
 
 
+def fix_label(sh):
+    """The on-screen place label must match where the clip was filmed (per its own title/tags), never just the script's wish."""
+    m = sh.get('media')
+    if not m or not sh.get('label'):
+        return
+    about = ' ' + re.sub(r'[^a-z ]', ' ', m.pop('about', '').replace('-', ' ')) + ' '
+    words = [w.lower() for w in re.findall(r'[A-Za-z]{4,}', sh['label'])]
+    if any(f' {w} ' in about for w in words if w in RTERMS):
+        return  # label's place is named by the clip itself
+    named = [w for w in RTERMS if f' {w} ' in about and w not in GENERIC]
+    old = sh['label']
+    sh['label'] = max(named, key=len).title() if named else ''
+    print(f'  label "{old}" -> "{sh["label"]}" (clip is not from there)')
+
 def vision_pick(cands, narration, query):
     """Ask a vision model which preview literally shows the line. Returns index or -1."""
     if not ORK:
@@ -296,7 +310,7 @@ def find(query, kind, need, narration, local=True):
         credits.append({'credit': c['credit'], 'page': c['page']})
         stats['filled'] += 1
         print(f'  {kind} "{q}" -> {c["id"]} ({c["desc"][:60]})')
-        return {'src': 'media/' + os.path.basename(path), 'kind': kind, 'credit': c['credit']}
+        return {'src': 'media/' + os.path.basename(path), 'kind': kind, 'credit': c['credit'], 'about': (c.get('desc', '') + ' ' + c.get('page', '')).lower()}
     print(f'  no good match for "{query}" -> designed graphic background')
     return None
 
@@ -327,6 +341,7 @@ else:
                 need = tl.get((si, bi, ki), 3.0) + 0.4
                 print(f'[{si}.{bi}.{ki}] footage "{sh.get("query", "")}"')
                 sh['media'] = find(sh.get('query', ''), 'video', need, b['narration']) or find(sh.get('query', ''), 'image', need, b['narration'])
+                fix_label(sh)
 
     # duotone backdrops behind the diagrams (EVP-studio style): one regional photo per section
     bq = [th.get('query') or ''] + [sh.get('query', '') for g in p['segments'] for b in g['beats'] for sh in b['shots'] if sh.get('kind') == 'footage']
