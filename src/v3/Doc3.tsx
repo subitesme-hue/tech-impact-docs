@@ -8,7 +8,7 @@ import {Logo} from '../scenes/Brand';
 import {Globe, Route} from './maps';
 import {Chart, Compare, Counter, Flow, FootageShot, Icons, Kinetic, Network, Steps, Timeline, Units} from './diagrams';
 import {Contents, Gauge, Headline, PaperMap, SectionWipe, Typed, WireGlobe} from './families';
-import {BackdropCtx, Duotone, Label, LookCtx, Stage, ease} from './kit';
+import {BackdropCtx, Duotone, Label, LookCtx, SectionBackdrop, Stage, ease} from './kit';
 
 // No regional footage found: the section's regional photo in duotone with the place callout (never a clip from the wrong country).
 const PlaceShot: React.FC<{look: Look; dur: number; back?: string; label?: string}> = ({look, dur, back, label}) => {
@@ -154,6 +154,14 @@ export const Doc3: React.FC<DocProps> = (p) => {
   return (
     <LookCtx.Provider value={look}>
     <AbsoluteFill style={{background: look.bg}}>
+      {/* one unbroken backdrop per segment, under its shots */}
+      {(p.backdrops || []).length ? p.segments.map((g, si) => {
+        const its = tl.items.filter((x) => x.kind === 'shot' && x.seg === si);
+        if (!its.length) return null;
+        const a = its[0].start, b = its[its.length - 1].start + its[its.length - 1].dur;
+        const src = p.backdrops![si % p.backdrops!.length].src;
+        return <Sequence key={`bd-${si}`} from={a} durationInFrames={Math.max(1, b - a)} name={`backdrop-${si}`}><SectionBackdrop src={src} look={look} dur={b - a} /></Sequence>;
+      }) : null}
       {tl.items.map((it, i) => {
         let body: React.ReactNode = null;
         if (it.kind === 'thumb') body = <Thumb3 p={p} look={look} dur={it.dur} />;

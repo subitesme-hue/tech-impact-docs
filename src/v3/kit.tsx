@@ -65,6 +65,18 @@ export const Duotone: React.FC<{src: string; look: Look; dur: number; strength?:
 };
 
 // Shared cinematic stage behind every diagram: deep gradient, faint dot grid, vignette, slow camera push.
+// One continuous backdrop under every diagram of a section: base gradient + duotone photo (slow, unbroken move) +
+// readability veil + vignette. Drawn by Doc3 in a Sequence spanning the whole section.
+export const SectionBackdrop: React.FC<{src: string; look: Look; dur: number}> = ({src, look, dur}) => (
+  <AbsoluteFill style={{background: look.stage === 'paper' ? `radial-gradient(ellipse at 50% 40%, ${look.panel} 0%, ${look.bg} 80%)`
+    : `radial-gradient(ellipse at 50% 45%, ${look.panel} 0%, ${look.bg} 72%)`}}>
+    <Duotone src={src} look={look} dur={dur} strength={look.mode === 'dark' ? 0.6 : 0.45} />
+    <AbsoluteFill style={{background: `radial-gradient(ellipse at 55% 50%, ${look.bg}d9 0%, ${look.bg}a6 55%, ${look.bg}59 100%)`}} />
+    <AbsoluteFill style={{background: look.mode === 'dark' ? 'radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%)'
+      : 'radial-gradient(ellipse at center, rgba(0,0,0,0) 65%, rgba(60,40,10,0.12) 100%)'}} />
+  </AbsoluteFill>
+);
+
 export const Stage: React.FC<{look: Look; dur: number; children?: React.ReactNode; push?: number}> = ({look, dur, children, push = 0.05}) => {
   const f = useCurrentFrame();
   const s = 1 + push * easeIO(f, 0, Math.max(1, dur));
@@ -81,16 +93,12 @@ export const Stage: React.FC<{look: Look; dur: number; children?: React.ReactNod
         backgroundSize: '240px 240px, 240px 240px, 40px 40px, 40px 40px'}
       : {backgroundImage: `radial-gradient(rgba(${look.fg},0.09) 1.2px, transparent 1.2px)`, backgroundSize: '42px 42px'};
   return (
-    <AbsoluteFill style={{background: base, overflow: 'hidden'}}>
-      {back ? <>
-        <Duotone src={back} look={look} dur={dur} strength={look.mode === 'dark' ? 0.6 : 0.45} />
-        {/* keep the diagram readable: calm the middle where the content sits */}
-        <AbsoluteFill style={{background: `radial-gradient(ellipse at 55% 50%, ${look.bg}d9 0%, ${look.bg}a6 55%, ${look.bg}59 100%)`}} />
-      </> : null}
-      <AbsoluteFill style={{...texture, transform: look.stage === 'paper' ? undefined : `scale(${s * 1.02})`}} />
+    // with a section backdrop, Doc3 draws the photo ONCE for the whole section (continuous move, no restart at each cut)
+    <AbsoluteFill style={{background: back ? 'transparent' : base, overflow: 'hidden'}}>
+      <AbsoluteFill style={{...texture}} />
       <AbsoluteFill style={{transform: `scale(${s})`}}>{children}</AbsoluteFill>
-      <AbsoluteFill style={{background: look.mode === 'dark' ? 'radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%)'
-        : 'radial-gradient(ellipse at center, rgba(0,0,0,0) 65%, rgba(60,40,10,0.12) 100%)', pointerEvents: 'none'}} />
+      {back ? null : <AbsoluteFill style={{background: look.mode === 'dark' ? 'radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%)'
+        : 'radial-gradient(ellipse at center, rgba(0,0,0,0) 65%, rgba(60,40,10,0.12) 100%)', pointerEvents: 'none'}} />}
     </AbsoluteFill>
   );
 };

@@ -23,7 +23,7 @@ UA = {'User-Agent': 'tech-impact-docs/2.0 (T&I News)'}
 
 p = json.load(open(PROPS, encoding='utf-8'))
 used_list = json.load(open(USED_PATH)) if os.path.exists(USED_PATH) else []
-used = set(used_list)
+used = set() if p.get('reuse_media') else set(used_list)  # reuse_media: re-render of an approved episode may pick the same clips again
 fresh, credits = [], []
 stats = {'pexels_http': {}, 'pixabay_http': {}, 'vision_calls': 0, 'vision_rejects': 0, 'shots': 0, 'filled': 0}
 cache = {}
