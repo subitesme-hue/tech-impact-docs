@@ -264,13 +264,13 @@ const Roll: React.FC<{text: string; f: number; look: Look; size: number; font: s
     })}
   </div>
 );
-const BlurWords: React.FC<{text: string; f: number; look: Look; size: number; accentLast?: boolean}> = ({text, f, look, size, accentLast = true}) => {
+const BlurWords: React.FC<{text: string; f: number; look: Look; size: number; accentLast?: boolean; fast?: boolean}> = ({text, f, look, size, accentLast = true, fast}) => {
   const words = text.split(/\s+/);
   return (
     <div style={{fontFamily: look.headlineFont, fontWeight: look.family === 'editorial' ? 700 : 800, fontSize: size, lineHeight: 1.04, color: look.ink,
       textTransform: look.upper ? 'uppercase' : 'none', maxWidth: 1300}}>
       {words.map((w, i) => {
-        const p = ease(f, 3 + i * 3, 13 + i * 3);
+        const p = fast ? ease(f, 1 + i * 1.2, 7 + i * 1.2) : ease(f, 3 + i * 3, 13 + i * 3);
         const acc = accentLast && i === words.length - 1 && words.length > 1;
         return <span key={i} style={{display: 'inline-block', marginRight: size * 0.25, opacity: p, filter: `blur(${(1 - p) * 14}px)`,
           transform: `translateY(${(1 - p) * 18}px)`, color: acc ? look.accent : look.ink,
@@ -303,9 +303,9 @@ export const AgendaReel: React.FC<{look: Look; dur: number; items: string[]; tit
       ) : (
         <>
           <div style={{position: 'absolute', left: 170, top: 300}}>
-            <Roll text={String(k + 1).padStart(2, '0')} f={lf} look={look} size={170} font={numFont} />
+            <Roll text={String(k + 1).padStart(2, '0')} f={to - from < 40 ? lf * 2 : lf} look={look} size={170} font={numFont} />
             <div style={{width: 120 * ease(lf, 2, 10), height: 4, background: look.accent, margin: '18px 0 30px'}} />
-            <BlurWords key={k} text={items[k]} f={lf} look={look} size={96} />
+            <BlurWords key={k} text={items[k]} f={lf} look={look} size={96} fast={to - from < 40} />
           </div>
           {/* progress: six ticks */}
           <div style={{position: 'absolute', left: 170, bottom: 120, display: 'flex', gap: 14}}>

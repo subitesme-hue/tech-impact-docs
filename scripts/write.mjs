@@ -192,6 +192,8 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
       const pos = [0, ...shots.slice(1).map((x) => { const c = tok(x.at)[0]; const i = c ? nt.indexOf(c) : -1; return i; })].filter((i) => i >= 0).sort((x, y) => x - y);
       pos.push(nt.length);
       const longest = Math.max(...pos.slice(1).map((x, i) => x - pos[i]));
+      const shortest = Math.min(...pos.slice(1).map((x, i) => x - pos[i]));
+      if (shortest < 3) problems.push(`beat ${bi + 1}: two cuts only ${shortest} words apart (min 3, the second picture would be dropped)`);
       if (longest > 18) problems.push(`beat ${bi + 1}: one shot runs ${longest} words (max 14) - add a cut`); else if (longest > 14) soft.push(`beat ${bi + 1}: one shot runs ${longest} words`);
     }
     if (shots[0].kind !== 'agenda' && w / shots.length > 13) (w / shots.length > 17 ? problems : soft).push(`beat ${bi + 1}: ${w} words but only ${shots.length} shots (need a new shot every 7-12 words)`);

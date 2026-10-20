@@ -341,6 +341,18 @@ else:
             for ki, sh in enumerate(b['shots']):
                 if sh.get('kind') != 'footage':
                     continue
+                if sh.get('pexels_id') and PEX:  # a specific clip chosen by an editor (Pexels "Get a Video" endpoint)
+                    v = get_json(f"https://api.pexels.com/videos/videos/{int(sh['pexels_id'])}", {'Authorization': PEX}, 'pexels') or {}
+                    files = [x for x in v.get('video_files', []) if x.get('file_type') == 'video/mp4' and (x.get('width') or 0) >= 1280]
+                    if files:
+                        best = min(files, key=lambda x: abs((x.get('width') or 0) - 1920))
+                        n += 1
+                        path = os.path.join(OUT, f'v{n}.mp4')
+                        prepare_video({'url': best['link'], 'duration': v.get('duration') or 0}, tl.get((si, bi, ki), 3.0) + 0.4, path)
+                        sh['media'] = {'src': 'media/' + os.path.basename(path), 'kind': 'video', 'credit': f"Video by {v.get('user', {}).get('name', 'Pexels')} on Pexels"}
+                        credits.append({'credit': sh['media']['credit'], 'page': v.get('url', '')})
+                        print(f'[{si}.{bi}.{ki}] pinned pexels clip {sh["pexels_id"]}')
+                        continue
                 need = tl.get((si, bi, ki), 3.0) + 0.4
                 print(f'[{si}.{bi}.{ki}] footage "{sh.get("query", "")}"')
                 sh['media'] = find(sh.get('query', ''), 'video', need, b['narration']) or find(sh.get('query', ''), 'image', need, b['narration'])
