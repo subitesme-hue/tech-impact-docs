@@ -136,7 +136,7 @@ REGION_WORDS = {
               'mozambique zimbabwe cameroon ivory coast abidjan sudan somalia botswana namibia angola congo tunisia algeria south africa '
               'johannesburg cape town durban maasai masai swahili zanzibar benin togo mali niger burkina sahel madagascar',
     'middle east': 'middle east arab arabic jordan amman lebanon beirut iraq baghdad egypt cairo turkey istanbul israel palestine syria iran '
-                   'saudi riyadh jeddah uae dubai abu dhabi qatar doha kuwait bahrain oman muscat gulf desert',
+                   'saudi riyadh jeddah uae dubai abu dhabi qatar doha kuwait bahrain oman muscat gulf',
     'gcc': 'gcc gulf arab arabic saudi riyadh jeddah makkah mecca medina neom uae emirates emirati dubai abu dhabi sharjah qatar doha '
            'kuwait bahrain manama oman muscat',
     'south asia': 'south asia india indian delhi mumbai bangalore bengaluru kolkata chennai hyderabad pakistan pakistani karachi lahore '
@@ -192,7 +192,10 @@ def regional(c):
 def fix_label(sh):
     """The on-screen place label must match where the clip was filmed (per its own title/tags), never just the script's wish."""
     m = sh.get('media')
-    if not m or not sh.get('label'):
+    if not m:
+        return
+    if not sh.get('label'):
+        m.pop('about', None)
         return
     about = ' ' + re.sub(r'[^a-z ]', ' ', m.pop('about', '').replace('-', ' ')) + ' '
     words = [w.lower() for w in re.findall(r'[A-Za-z]{4,}', sh['label'])]
