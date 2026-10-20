@@ -142,9 +142,9 @@ export const Gauge: React.FC<{look: Look; dur: number; value: number; prefix?: s
         <path d={arc(1)} fill="none" stroke={`rgba(${look.fg},0.12)`} strokeWidth={18} strokeLinecap="round" />
         <path d={arc(Math.max(0.001, pct * p))} fill="none" stroke={look.accent} strokeWidth={18} strokeLinecap="round" />
       </svg>
-      <div style={{position: 'absolute', left: 0, right: 0, top: 500, textAlign: 'center', fontFamily: MONO, fontWeight: 500, fontSize: 150, color: look.ink, letterSpacing: -4}}>
+      <div style={{position: 'absolute', left: 0, right: 0, top: 500, textAlign: 'center', fontFamily: MONO, fontWeight: 500, fontSize: String(value).length > 5 ? 120 : 150, color: look.ink, letterSpacing: -4}}>
         {prefix}{fmt(value * p, d)}{suffix}</div>
-      <Label size={26} color={look.accent2} style={{position: 'absolute', left: 360, right: 360, top: 700, textAlign: 'center', lineHeight: 1.5, opacity: ease(f, 14, 28)}}>{label}</Label>
+      <Label size={26} color={look.accent2} style={{position: 'absolute', left: 360, right: 360, top: 850, textAlign: 'center', lineHeight: 1.5, opacity: ease(f, 14, 28)}}>{label}</Label>
       {source ? <div style={{position: 'absolute', right: 120, bottom: 70, fontFamily: MONO, fontSize: 19, letterSpacing: 2, color: look.dim}}>SRC · {source.toUpperCase()}</div> : null}
     </Stage>
   );

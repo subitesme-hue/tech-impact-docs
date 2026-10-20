@@ -336,7 +336,9 @@ else:
         if len(backs) >= len(p['segments']) or not q:
             continue
         print(f'[backdrop] "{q}"')
-        m = find(q, 'image', 0, f"Background photo for a documentary about {p.get('tech') or p['title']} in {p.get('region')}")
+        m = find(q, 'image', 0, f"Calm background photo for a documentary about {p.get('tech') or p['title']} in {p.get('region')}. It must show the "
+                 f"subject of the story or ordinary daily life, land or cities of that region. Reject protests, crowds with placards, conflict, police, "
+                 f"politics, religious ceremonies, disasters with visible injury, and anything that could read as a political statement.")
         if m:
             backs.append(m)
     p['backdrops'] = backs
