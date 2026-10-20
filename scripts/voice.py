@@ -69,18 +69,37 @@ norm = lambda s: re.sub(r'[^a-z0-9]+', '', s.lower())
 STOP = {'the', 'a', 'an', 'it', 'is', 'of', 'for', 'and', 'what', 'how', 'its', 'in', 'to', 'today', 'means', 'used', 'focus', 'solves', 'this'}
 
 
-def agenda_marks(words, t0_word, shot_start):
-    """Frames (relative to the agenda shot) where the narrator names each section, so the agenda cuts on those words."""
-    titles = [g['title'] for g in props['segments'] if g['kind'] == 'chapter']
-    ws = [norm(w[0]) for w in words]
-    marks, last = [], -1
-    for k, title in enumerate(titles):
-        keys = [norm(x) for x in title.split() if norm(x) and norm(x) not in STOP] or [norm(title.split()[-1])]
-        hit = next((i for i in range(last + 1, len(ws)) if any(ws[i] == key or (len(key) > 4 and ws[i].startswith(key[:5])) for key in keys)), None)
-        if hit is None:  # spread the rest evenly over the remaining words
-            hit = min(len(ws) - 1, last + 1 + max(1, (len(ws) - last - 1) // max(1, len(titles) - k)))
-        last = hit
-        marks.append(max(0, round((t0_word + words[hit][1] - 0.15 - shot_start) * FPS)) if words else k * 45)
+def text_pos(text, phrase, n_spoken, after):
+    """Index in the spoken word list that corresponds to where `phrase` starts in the written text (proportional)."""
+    tw = [norm(x) for x in str(text).split()]
+    target = norm(str(phrase or '').split()[0]) if str(phrase or '').split() else ''
+    if not target or not tw:
+        return None
+    k = next((i for i, w in enumerate(tw) if w == target or (len(target) > 2 and w.startswith(target))), None)
+    if k is None:
+        return None
+    return min(n_spoken - 1, max(after + 1, round(k * n_spoken / len(tw))))
+
+
+def agenda_marks(words, t0_word, shot_start, narration):
+    """Frames (relative to the agenda shot) where the narrator starts naming each section. The agenda line lists the parts
+    as clauses ("how it works, the problem, the hurdles, ..."), so each card starts on its clause, even when the narrator
+    uses different words from the section titles."""
+    n = len([g for g in props['segments'] if g['kind'] == 'chapter'])
+    raw = str(narration).split()
+    starts = [0] + [i + 1 for i, w in enumerate(raw[:-1]) if re.search(r'[,:;]$', w) or raw[i + 1].lower() == 'and']
+    starts = sorted(set(starts))
+    if len(starts) >= n:
+        clause = starts[-n:]
+    else:  # not enough clauses: spread over the line
+        clause = [round(len(raw) * k / n) for k in range(n)]
+    marks = []
+    for c in clause:
+        i = min(len(words) - 1, round(c * len(words) / max(1, len(raw)))) if words else 0
+        marks.append(max(0, round((t0_word + (words[i][1] if words else 0) - 0.1 - shot_start) * FPS)))
+    # never two cards closer than 0.6 s
+    for k in range(1, len(marks)):
+        marks[k] = max(marks[k], marks[k - 1] + 18)
     return marks
 
 
@@ -112,6 +131,8 @@ def build():
             starts, last_i = [beat_start], -1
             for j, sh in enumerate(shots[1:], 1):
                 i = cue_index(words, sh.get('at'), last_i)
+                if i is None and words:  # cue not in the spoken tokens (e.g. "6.1" is spoken "six point one"): map its
+                    i = text_pos(beat['narration'], sh.get('at'), len(words), last_i)  # position in the written line
                 if i is None:  # spread evenly over the words if the cue is missing
                     i = min(len(words) - 1, max(last_i + 1, round(len(words) * j / len(shots))))
                 last_i = i
@@ -127,7 +148,7 @@ def build():
                 item = {'kind': 'shot', 'seg': si, 'beat': bi, 'shot': j, 'start': round(s0 * FPS), 'dur': max(1, round((s1 - s0) * FPS)),
                         'sectionStart': bi == 0 and n == 0 and seg['kind'] == 'chapter'}
                 if shots[j].get('kind') == 'agenda':
-                    item['marks'] = agenda_marks(words, t + 0.06, s0)
+                    item['marks'] = agenda_marks(words, t + 0.06, s0, beat['narration'])
                 items.append(item)
             t = end
         if seg['kind'] == 'summary':
