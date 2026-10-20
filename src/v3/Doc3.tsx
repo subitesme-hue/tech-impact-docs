@@ -7,7 +7,7 @@ import {UiExample} from '../scenes/Examples';
 import {Logo} from '../scenes/Brand';
 import {Globe, Route} from './maps';
 import {Chart, Compare, Counter, Flow, FootageShot, Icons, Kinetic, Network, Steps, Timeline, Units} from './diagrams';
-import {Contents, Gauge, Headline, PaperMap, SectionWipe, Typed, WireGlobe} from './families';
+import {AgendaReel, Contents, Gauge, Headline, PaperMap, SectionWipe, Typed, WireGlobe} from './families';
 import {BackdropCtx, Duotone, Label, LookCtx, SectionBackdrop, Stage, ease} from './kit';
 
 // No regional footage found: the section's regional photo in duotone with the place callout (never a clip from the wrong country).
@@ -29,7 +29,7 @@ const PlaceShot: React.FC<{look: Look; dur: number; back?: string; label?: strin
   );
 };
 
-const ShotView: React.FC<{s: Shot; look: Look; dur: number; seed: number; sections: string[]; p: DocProps; back?: string}> = ({s, look, dur, seed, sections, p, back}) => {
+const ShotView: React.FC<{s: Shot; look: Look; dur: number; seed: number; sections: string[]; p: DocProps; back?: string; marks?: number[]}> = ({s, look, dur, seed, sections, p, back, marks}) => {
   switch (s.kind) {
     case 'globe':
       if (look.family === 'editorial') return <PaperMap look={look} dur={dur} focus={s.focus} region={s.region || p.region} points={s.points} label={s.label} />;
@@ -54,15 +54,17 @@ const ShotView: React.FC<{s: Shot; look: Look; dur: number; seed: number; sectio
     case 'device': return <UiExample look={look} seed={seed} dur={dur} v={{type: 'ui', variant: s.device === 'phone' ? 'notify' : 'list', app: s.app, lines: s.lines}} />;
     case 'footage': return s.media ? <FootageShot look={look} dur={dur} media={s.media} label={s.label} seed={seed} />
       : <PlaceShot look={look} dur={dur} back={back} label={s.label} />;
-    case 'agenda':
-      if (look.family !== 'night') return <Contents look={look} dur={dur} items={sections} title={p.title || p.tech || ''} />;
-      return <Agenda look={look} dur={dur} items={sections} tech={p.title || p.tech || ''} />;
+    case 'agenda': {
+      const bs = (p.backdrops || []).map((b) => b.src);
+      const backs = p.segments.map((_, si) => (bs.length ? bs[si % bs.length] : undefined));
+      return <AgendaReel look={look} dur={dur} items={sections} title={p.title || p.tech || ''} marks={marks} backs={backs} Backdrop={SectionBackdrop} />;
+    }
     default: return <Stage look={look} dur={dur} />;
   }
 };
 
 // "In this episode": the six parts light up while the presenter names them.
-const Agenda: React.FC<{look: Look; dur: number; items: string[]; tech: string}> = ({look, dur, items, tech}) => {
+export const AgendaList: React.FC<{look: Look; dur: number; items: string[]; tech: string}> = ({look, dur, items, tech}) => {
   const f = useCurrentFrame();
   const per = Math.max(8, (dur - 20) / Math.max(1, items.length));
   const active = Math.min(items.length - 1, Math.floor((f - 12) / per));
@@ -172,7 +174,7 @@ export const Doc3: React.FC<DocProps> = (p) => {
           const back = bs.length ? bs[it.seg! % bs.length].src : undefined;
           // maps keep their own clean cartography; everything else sits on the section's duotone photo
           const useBack = back && !['globe', 'route', 'footage'].includes(s.kind) ? back : undefined;
-          body = <BackdropCtx.Provider value={useBack}><ShotView s={s} look={look} dur={it.dur} seed={i * 17 + 3} sections={sections} p={p} back={back} /></BackdropCtx.Provider>;
+          body = <BackdropCtx.Provider value={useBack}><ShotView s={s} look={look} dur={it.dur} seed={i * 17 + 3} sections={sections} p={p} back={back} marks={it.marks} /></BackdropCtx.Provider>;
         }
         const sec = it.sectionStart && it.seg !== undefined ? sections.indexOf(p.segments[it.seg].title) : -1;
         return <React.Fragment key={i}>

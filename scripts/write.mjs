@@ -130,7 +130,7 @@ HOW THESE FILMS WORK (follow exactly):
 TRUTH: use ONLY the research. Every number, name, date must come from it. Forecasts said as forecasts.
 
 STRUCTURE — "segments": exactly 7, in order:
-0) the intro, {"kind":"summary","title":"In this episode","beats":[B1,B2]}, about 30 seconds, 72-88 words: B1 = the COLD OPEN (2-3 sentences, 3-4 shots). Its first sentence is 3-8 words and must stop the scroll on its own: a startling number, a stark contrast or a human moment, said like a documentary narrator (e.g. "Ninety minutes by road. Six minutes by air." / "One phone call can save a harvest."). Never open with "In", "Today", "Imagine", "Have you ever", "What if" or a question. Then name the place and the stakes; B2 = the presenter tells the viewer what this episode covers, naming all six parts naturally (one shot: {"kind":"agenda"}).
+0) the intro, {"kind":"summary","title":"In this episode","beats":[B1,B2]}, about 30 seconds, 72-88 words: B1 = the COLD OPEN (2-3 sentences, 3-4 shots). Its first sentence is 3-8 words and must stop the scroll on its own: a startling number, a stark contrast or a human moment, said like a documentary narrator (e.g. "Ninety minutes by road. Six minutes by air." / "One phone call can save a harvest."). Never open with "In", "Today", "Imagine", "Have you ever", "What if" or a question. Then name the place and the stakes; B2 = the presenter names the six parts in ONE brisk sentence of 18-30 words, with the parts in order and nothing else (no "stay with us", no restating the topic), e.g. "We cover how it works, the problem, the hurdles, the money, who uses it now, and what comes next." (one shot: {"kind":"agenda"}; the screen cuts on each part as it is named).
 1..6) {"kind":"chapter","title":T,"beats":[2-3 beats]} with titles: ${SECTIONS.join(' | ')} (you may sharpen wording, keep meaning and order).
 - beat = {"narration": 1-2 sentences, 12-34 words, "shots": [...]}. Number of shots in a beat = about one per 9 words (so 2-4). Every shot after the first has "at": the exact first 1-2 words of the narration where that shot starts (copied from the narration).
 - Total narration (all beats + outro): 440-520 words.
@@ -185,6 +185,15 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
     if (!shots.length) { problems.push(`beat ${bi + 1}: no shots`); return; }
     const w = words(b.narration);
     if (w < 6 || w > 50) problems.push(`beat ${bi + 1}: narration ${w} words`);
+    if (shots[0].kind === 'agenda' && (w < 14 || w > 36)) problems.push(`agenda line is ${w} words (need 18-30, one brisk sentence)`);
+    if (shots[0].kind !== 'agenda') {
+      // no single picture may sit under more than ~14 spoken words (about 5 seconds)
+      const nt = tok(b.narration);
+      const pos = [0, ...shots.slice(1).map((x) => { const c = tok(x.at)[0]; const i = c ? nt.indexOf(c) : -1; return i; })].filter((i) => i >= 0).sort((x, y) => x - y);
+      pos.push(nt.length);
+      const longest = Math.max(...pos.slice(1).map((x, i) => x - pos[i]));
+      if (longest > 18) problems.push(`beat ${bi + 1}: one shot runs ${longest} words (max 14) - add a cut`); else if (longest > 14) soft.push(`beat ${bi + 1}: one shot runs ${longest} words`);
+    }
     if (shots[0].kind !== 'agenda' && w / shots.length > 13) (w / shots.length > 17 ? problems : soft).push(`beat ${bi + 1}: ${w} words but only ${shots.length} shots (need a new shot every 7-12 words)`);
     shots.forEach((sh, si) => {
       nShots++;

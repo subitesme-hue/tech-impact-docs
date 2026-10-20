@@ -66,6 +66,24 @@ except Exception as e:  # local fallback: onnx voice, word times spread by lengt
 norm = lambda s: re.sub(r'[^a-z0-9]+', '', s.lower())
 
 
+STOP = {'the', 'a', 'an', 'it', 'is', 'of', 'for', 'and', 'what', 'how', 'its', 'in', 'to', 'today', 'means', 'used', 'focus', 'solves', 'this'}
+
+
+def agenda_marks(words, t0_word, shot_start):
+    """Frames (relative to the agenda shot) where the narrator names each section, so the agenda cuts on those words."""
+    titles = [g['title'] for g in props['segments'] if g['kind'] == 'chapter']
+    ws = [norm(w[0]) for w in words]
+    marks, last = [], -1
+    for k, title in enumerate(titles):
+        keys = [norm(x) for x in title.split() if norm(x) and norm(x) not in STOP] or [norm(title.split()[-1])]
+        hit = next((i for i in range(last + 1, len(ws)) if any(ws[i] == key or (len(key) > 4 and ws[i].startswith(key[:5])) for key in keys)), None)
+        if hit is None:  # spread the rest evenly over the remaining words
+            hit = min(len(ws) - 1, last + 1 + max(1, (len(ws) - last - 1) // max(1, len(titles) - k)))
+        last = hit
+        marks.append(max(0, round((t0_word + words[hit][1] - 0.15 - shot_start) * FPS)) if words else k * 45)
+    return marks
+
+
 def cue_index(words, phrase, after):
     target = [norm(x) for x in str(phrase or '').split() if norm(x)]
     if not target:
@@ -106,8 +124,11 @@ def build():
                     keep.append(j)
             for n, j in enumerate(keep):
                 s0 = starts[j]; s1 = starts[keep[n + 1]] if n + 1 < len(keep) else end
-                items.append({'kind': 'shot', 'seg': si, 'beat': bi, 'shot': j, 'start': round(s0 * FPS), 'dur': max(1, round((s1 - s0) * FPS)),
-                              'sectionStart': bi == 0 and n == 0 and seg['kind'] == 'chapter'})
+                item = {'kind': 'shot', 'seg': si, 'beat': bi, 'shot': j, 'start': round(s0 * FPS), 'dur': max(1, round((s1 - s0) * FPS)),
+                        'sectionStart': bi == 0 and n == 0 and seg['kind'] == 'chapter'}
+                if shots[j].get('kind') == 'agenda':
+                    item['marks'] = agenda_marks(words, t + 0.06, s0)
+                items.append(item)
             t = end
         if seg['kind'] == 'summary':
             summary_end = t

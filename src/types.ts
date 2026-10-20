@@ -34,6 +34,7 @@ export type TimelineItem = {
   start: number; // frame
   dur: number; // frames
   sectionStart?: boolean;
+  marks?: number[]; // agenda: frames where each section is named
 };
 
 export type DocProps = {

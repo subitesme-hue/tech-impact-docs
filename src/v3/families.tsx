@@ -250,3 +250,72 @@ export const SectionWipe: React.FC<{look: Look; title: string; n: number}> = ({l
   }
   return null;
 };
+
+// ---------------- the intro's "In this episode" as a fast reel cut on the narrator's words ----------------
+// Borrowed from the user's own films (my-video/out/riyadax9-brand-film.mp4): heavy headline + one italic serif accent,
+// blur-to-sharp word reveal, odometer-rolling number, accent bar wipe between beats. Each section gets its own
+// full-frame card on its regional duotone photo, timed to `marks` (when the narrator says that section).
+const SERIF_ITALIC = "'Playfair Display', serif";
+const Roll: React.FC<{text: string; f: number; look: Look; size: number; font: string}> = ({text, f, look, size, font}) => (
+  <div style={{display: 'flex', overflow: 'hidden', height: size * 1.05}}>
+    {text.split('').map((ch, i) => {
+      const p = ease(f, i * 2, 10 + i * 2);
+      return <div key={i} style={{fontFamily: font, fontSize: size, lineHeight: 1.05, color: look.accent, transform: `translateY(${(1 - p) * 100}%)`}}>{ch}</div>;
+    })}
+  </div>
+);
+const BlurWords: React.FC<{text: string; f: number; look: Look; size: number; accentLast?: boolean}> = ({text, f, look, size, accentLast = true}) => {
+  const words = text.split(/\s+/);
+  return (
+    <div style={{fontFamily: look.headlineFont, fontWeight: look.family === 'editorial' ? 700 : 800, fontSize: size, lineHeight: 1.04, color: look.ink,
+      textTransform: look.upper ? 'uppercase' : 'none', maxWidth: 1300}}>
+      {words.map((w, i) => {
+        const p = ease(f, 3 + i * 3, 13 + i * 3);
+        const acc = accentLast && i === words.length - 1 && words.length > 1;
+        return <span key={i} style={{display: 'inline-block', marginRight: size * 0.25, opacity: p, filter: `blur(${(1 - p) * 14}px)`,
+          transform: `translateY(${(1 - p) * 18}px)`, color: acc ? look.accent : look.ink,
+          fontFamily: acc ? SERIF_ITALIC : undefined, fontStyle: acc ? 'italic' : 'normal', textTransform: acc ? 'none' : undefined, fontWeight: acc ? 700 : undefined}}>{w}</span>;
+      })}
+    </div>
+  );
+};
+
+export const AgendaReel: React.FC<{look: Look; dur: number; items: string[]; title: string; marks?: number[]; backs?: (string | undefined)[];
+  Backdrop: React.FC<{src: string; look: Look; dur: number}>}> = ({look, dur, items, title, marks, backs = [], Backdrop}) => {
+  const f = useCurrentFrame();
+  const n = items.length;
+  const ms = marks && marks.length === n ? marks : items.map((_, i) => Math.round(18 + ((dur - 18) * i) / n));
+  let k = -1;
+  for (let i = 0; i < n; i++) if (f >= ms[i]) k = i;
+  const from = k < 0 ? 0 : ms[k];
+  const to = k < 0 ? ms[0] : k + 1 < n ? ms[k + 1] : dur;
+  const lf = f - from;
+  const numFont = look.family === 'blueprint' ? MONO : look.family === 'editorial' ? look.headlineFont : SANS;
+  const back = k >= 0 ? backs[k + 1] : backs[0];
+  return (
+    <AbsoluteFill style={{background: look.bg, overflow: 'hidden'}}>
+      {back ? <Backdrop key={k} src={back} look={look} dur={Math.max(1, to - from)} /> : <Stage look={look} dur={to - from} />}
+      {k < 0 ? (
+        <div style={{position: 'absolute', left: 170, top: 330}}>
+          <div style={{fontFamily: look.labelFont, fontSize: 24, letterSpacing: 6, color: look.accent, opacity: ease(f, 0, 8)}}>IN THIS EPISODE</div>
+          <div style={{marginTop: 26}}><BlurWords text={title} f={f} look={look} size={110} /></div>
+        </div>
+      ) : (
+        <>
+          <div style={{position: 'absolute', left: 170, top: 300}}>
+            <Roll text={String(k + 1).padStart(2, '0')} f={lf} look={look} size={170} font={numFont} />
+            <div style={{width: 120 * ease(lf, 2, 10), height: 4, background: look.accent, margin: '18px 0 30px'}} />
+            <BlurWords key={k} text={items[k]} f={lf} look={look} size={96} />
+          </div>
+          {/* progress: six ticks */}
+          <div style={{position: 'absolute', left: 170, bottom: 120, display: 'flex', gap: 14}}>
+            {items.map((_, i) => <div key={i} style={{width: i === k ? 70 : 30, height: 5, background: i <= k ? look.accent : `rgba(${look.fg},0.25)`}} />)}
+          </div>
+        </>
+      )}
+      {/* a slim accent bar sweeps across on each cut (no full-frame flash) */}
+      {k >= 0 && lf < 10 ? <div style={{position: 'absolute', top: 0, bottom: 0, width: 260, left: interpolate(lf, [0, 10], [-300, 1960]), background: look.accent,
+        opacity: 0.85, transform: 'skewX(-12deg)'}} /> : null}
+    </AbsoluteFill>
+  );
+};
