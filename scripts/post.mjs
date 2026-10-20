@@ -89,9 +89,12 @@ if (post.x?.account_ids?.length && fs.existsSync('out/cover.jpg')) {
     if (!xMedia) throw new Error('image upload returned no media id: ' + JSON.stringify(up).slice(0, 300));
     console.log('uploaded cover.jpg ->', xMedia, up.data?.media_status || '');
     const link = ytUrl || 'https://tai.news';
-    const text = `${post.x.content}\n${link}`; // hook (max 35 characters) + the episode link
+    // X showed the hook + image but dropped a link placed in the tweet text (seen on the 20 Oct post), so the link goes in
+    // settings.firstComment: "Text posted as a reply to your tweet immediately after publishing" (posteverywhere.ai/docs/platforms/x-twitter).
+    const text = post.x.content; // hook, max 35 characters
+    const reply = `Watch the full episode: ${link}`;
     results.x = await create({media_ids: [xMedia], account_ids: post.x.account_ids, content: text,
-      platform_content: {x: {content: text}}});
+      platform_content: {x: {content: text, settings: {replySettings: 'everyone', firstComment: reply}}}});
     console.log('X post created');
   } catch (e) { console.error('X post FAILED (other platforms already posted):', e.message); failed = true; }
 }
