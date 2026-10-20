@@ -4,6 +4,7 @@ import type {IconItem, Media} from '../types';
 import {DISPLAY, Look, MONO, SANS, rand} from '../theme';
 import {MediaLayer} from '../components/Layers';
 import {Icon, Label, Node, Source, Stage, Title, ease, easeIO, fmt} from './kit';
+import {numFont} from './families';
 
 type B = {look: Look; dur: number};
 
@@ -20,7 +21,7 @@ export const Flow: React.FC<B & {nodes: IconItem[]; mover?: string; label?: stri
       <svg width={1920} height={1080} style={{position: 'absolute'}}>
         {xs.slice(1).map((x, i) => {
           const p = ease(f, 10 + i * 8, 28 + i * 8);
-          return <line key={i} x1={xs[i] + 95} y1={y} x2={xs[i] + 95 + (x - xs[i] - 190) * p} y2={y} stroke="rgba(255,255,255,0.45)" strokeWidth={3} strokeDasharray="2 12" strokeLinecap="round" />;
+          return <line key={i} x1={xs[i] + 95} y1={y} x2={xs[i] + 95 + (x - xs[i] - 190) * p} y2={y} stroke={`rgba(${look.fg},0.45)`} strokeWidth={3} strokeDasharray="2 12" strokeLinecap="round" />;
         })}
       </svg>
       {nodes.slice(0, n).map((nd, i) => {
@@ -35,7 +36,7 @@ export const Flow: React.FC<B & {nodes: IconItem[]; mover?: string; label?: stri
       })}
       <div style={{position: 'absolute', left: px - 26, top: y - 150, width: 52, height: 52, borderRadius: 26, background: look.accent,
         display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 36px ${look.accent}`, opacity: ease(f, 18, 24)}}>
-        <Icon name={mover || 'Package'} size={30} color="#0b0b10" stroke={2} />
+        <Icon name={mover || 'Package'} size={30} color={look.onAccent} stroke={2} />
       </div>
       {label ? <Title look={look} p={ease(f, 0, 14)} style={{position: 'absolute', left: 400, top: 140, fontSize: 52}}>{label}</Title> : null}
     </Stage>
@@ -57,7 +58,7 @@ export const Counter: React.FC<B & {value: number; from?: number; prefix?: strin
         <div style={{display: 'flex', alignItems: 'baseline', gap: 30}}>
           {from !== undefined ? <div style={{fontFamily: SANS, fontWeight: 300, fontSize: 120, color: look.dim, textDecoration: p > 0.95 ? 'line-through' : 'none'}}>
             {prefix}{fmt(from, d)}{suffix}</div> : null}
-          <div style={{fontFamily: SANS, fontWeight: 800, fontSize: 210, color: look.ink, letterSpacing: -4, lineHeight: 1}}>{prefix}{fmt(v, d)}{suffix}</div>
+          <div style={{fontFamily: numFont(look), fontWeight: look.family === 'night' ? 800 : 700, fontSize: 210, color: look.ink, letterSpacing: -4, lineHeight: 1}}>{prefix}{fmt(v, d)}{suffix}</div>
         </div>
         <Label size={30} color={look.accent2} style={{marginTop: 34, maxWidth: 1300, textAlign: 'center', lineHeight: 1.5, opacity: ease(f, 14, 28)}}>{label}</Label>
       </AbsoluteFill>
@@ -73,7 +74,7 @@ export const Compare: React.FC<B & {title?: string; left: IconItem & {value: str
     return (
       <div style={{flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: p, transform: `translateY(${(1 - p) * 30}px)`}}>
         <Node icon={it.icon} look={look} size={170} p={p} hot={i === 1} />
-        <div style={{fontFamily: SANS, fontWeight: 800, fontSize: 120, color: i ? look.accent : look.ink, marginTop: 30}}>{it.value}</div>
+        <div style={{fontFamily: numFont(look), fontWeight: 800, fontSize: 120, color: i ? look.accent : look.ink, marginTop: 30}}>{it.value}</div>
         <Label size={26} color={look.dim} style={{marginTop: 10, textAlign: 'center', maxWidth: 560, lineHeight: 1.4}}>{it.label}</Label>
       </div>
     );
@@ -83,7 +84,7 @@ export const Compare: React.FC<B & {title?: string; left: IconItem & {value: str
       {title ? <Label size={28} color={look.accent2} style={{position: 'absolute', top: 120, width: '100%', textAlign: 'center', opacity: ease(f, 0, 12)}}>{title}</Label> : null}
       <div style={{position: 'absolute', left: 380, right: 140, top: 250, display: 'flex', alignItems: 'flex-start'}}>
         {side(left, 0)}
-        <div style={{width: 2, height: 520 * ease(f, 4, 24), background: 'rgba(255,255,255,0.25)', margin: '0 40px'}} />
+        <div style={{width: 2, height: 520 * ease(f, 4, 24), background: `rgba(${look.fg},0.25)`, margin: '0 40px'}} />
         {side(right, 1)}
       </div>
     </Stage>
@@ -107,13 +108,13 @@ export const Units: React.FC<B & {total: number; highlight: number; icon: string
               const i = r * cols + c;
               if (i >= T) return null;
               return <div key={c} style={{opacity: ease(f, (i % cols) * 0.8, 8 + (i % cols) * 0.8)}}>
-                <Icon name={icon} size={size} color={i < lit ? look.accent : 'rgba(255,255,255,0.25)'} stroke={i < lit ? 2 : 1.4} /></div>;
+                <Icon name={icon} size={size} color={i < lit ? look.accent : `rgba(${look.fg},0.25)`} stroke={i < lit ? 2 : 1.4} /></div>;
             })}
           </div>
         ))}
       </div>
       <div style={{position: 'absolute', left: 0, right: 0, bottom: 150, textAlign: 'center'}}>
-        <span style={{fontFamily: SANS, fontWeight: 800, fontSize: 84, color: look.accent}}>{lit} in {T}</span>
+        <span style={{fontFamily: numFont(look), fontWeight: 800, fontSize: 84, color: look.accent}}>{lit} in {T}</span>
         <Label size={28} style={{marginTop: 14, opacity: ease(f, 20, 34)}}>{label}</Label>
       </div>
     </Stage>
@@ -135,7 +136,7 @@ export const Chart: React.FC<B & {chart: 'line' | 'bar'; title: string; unit?: s
     <Stage look={look} dur={dur}>
       <Title look={look} p={ease(f, 0, 12)} style={{position: 'absolute', left: X0, top: 150, fontSize: 54}}>{title}</Title>
       <svg width={1920} height={1080} style={{position: 'absolute'}}>
-        <line x1={X0} y1={Y0} x2={X1} y2={Y0} stroke="rgba(255,255,255,0.35)" strokeWidth={2} />
+        <line x1={X0} y1={Y0} x2={X1} y2={Y0} stroke={`rgba(${look.fg},0.35)`} strokeWidth={2} />
         {chart === 'line' ? (
           <>
             <polyline fill="none" stroke={look.accent} strokeWidth={6} strokeLinejoin="round" strokeLinecap="round"
@@ -143,7 +144,7 @@ export const Chart: React.FC<B & {chart: 'line' | 'bar'; title: string; unit?: s
             {pts.map((pt, i) => (i / Math.max(1, pts.length - 1) <= p + 0.01 ? (
               <g key={i}>
                 <circle cx={x(i)} cy={y(pt.value)} r={10} fill={look.bg} stroke={look.accent} strokeWidth={4} />
-                <text x={x(i)} y={y(pt.value) - 26} textAnchor="middle" fill="#fff" fontFamily={SANS} fontWeight={700} fontSize={28}>{prefix}{fmt(pt.value, pt.value % 1 ? 1 : 0)}{u}</text>
+                <text x={x(i)} y={y(pt.value) - 26} textAnchor="middle" fill={look.ink} fontFamily={SANS} fontWeight={700} fontSize={28}>{prefix}{fmt(pt.value, pt.value % 1 ? 1 : 0)}{u}</text>
               </g>) : null))}
           </>
         ) : pts.map((pt, i) => {
@@ -151,8 +152,8 @@ export const Chart: React.FC<B & {chart: 'line' | 'bar'; title: string; unit?: s
           const w = Math.min(160, ((X1 - X0) / pts.length) * 0.55);
           return (
             <g key={i}>
-              <rect x={x(i) - w / 2} y={Y0 - h} width={w} height={h} rx={8} fill={i === pts.length - 1 ? look.accent : 'rgba(255,255,255,0.35)'} />
-              <text x={x(i)} y={Y0 - h - 20} textAnchor="middle" fill="#fff" fontFamily={SANS} fontWeight={700} fontSize={30} opacity={h > 4 ? 1 : 0}>{prefix}{fmt(pt.value, pt.value % 1 ? 1 : 0)}{u}</text>
+              <rect x={x(i) - w / 2} y={Y0 - h} width={w} height={h} rx={8} fill={i === pts.length - 1 ? look.accent : `rgba(${look.fg},0.35)`} />
+              <text x={x(i)} y={Y0 - h - 20} textAnchor="middle" fill={look.ink} fontFamily={SANS} fontWeight={700} fontSize={30} opacity={h > 4 ? 1 : 0}>{prefix}{fmt(pt.value, pt.value % 1 ? 1 : 0)}{u}</text>
             </g>
           );
         })}
@@ -199,10 +200,10 @@ export const Network: React.FC<B & {center: IconItem; nodes: IconItem[]}> = ({lo
           const ex = cx + Math.cos(ang(i)) * R * p, ey = cy + Math.sin(ang(i)) * R * 0.78 * p;
           return <line key={i} x1={cx} y1={cy} x2={ex} y2={ey} stroke={`${look.accent}88`} strokeWidth={2.5} />;
         })}
-        <circle cx={cx} cy={cy} r={R * 0.55} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={1} />
+        <circle cx={cx} cy={cy} r={R * 0.55} fill="none" stroke={`rgba(${look.fg},0.07)`} strokeWidth={1} />
       </svg>
       <div style={{position: 'absolute', left: cx - 110, top: cy - 110}}><Node icon={center.icon} look={look} size={220} p={ease(f, 0, 12)} hot /></div>
-      <Label size={26} color={look.accent} style={{position: 'absolute', left: cx - 300, width: 600, top: cy + 125, textAlign: 'center', opacity: ease(f, 6, 18), textShadow: '0 0 12px #000'}}>{center.label}</Label>
+      <Label size={26} color={look.accent} style={{position: 'absolute', left: cx - 300, width: 600, top: cy + 125, textAlign: 'center', opacity: ease(f, 6, 18), textShadow: look.mode === 'dark' ? '0 0 12px #000' : 'none'}}>{center.label}</Label>
       {ns.map((nd, i) => {
         const p = ease(f, 16 + i * 6, 30 + i * 6);
         const ex = cx + Math.cos(ang(i)) * R, ey = cy + Math.sin(ang(i)) * R * 0.78;
@@ -228,7 +229,8 @@ export const Icons: React.FC<B & {title?: string; items: IconItem[]}> = ({look, 
         {its.map((it, i) => {
           const p = ease(f, 8 + i * per, 20 + i * per);
           return (
-            <div key={i} style={{width: 360, padding: '46px 30px', borderRadius: 26, border: '1.5px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.04)',
+            <div key={i} style={{width: 360, padding: '46px 30px', borderRadius: 26, border: `1.5px ${look.node === 'box' ? 'dashed' : 'solid'} rgba(${look.fg},0.2)`, background: look.node === 'solid' ? look.panel : `rgba(${look.fg},0.04)`,
+              boxShadow: look.node === 'solid' ? '0 12px 34px rgba(0,0,0,0.08)' : 'none',
               display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: p, transform: `translateY(${(1 - p) * 40}px)`}}>
               <Icon name={it.icon} size={92} color={look.accent} />
               <Label size={24} style={{marginTop: 30, textAlign: 'center', lineHeight: 1.45}}>{it.label}</Label>
@@ -247,13 +249,13 @@ export const Timeline: React.FC<B & {items: {year: string; text: string}[]}> = (
   const xs = its.map((_, i) => 520 + (i * 1200) / Math.max(1, its.length - 1));
   return (
     <Stage look={look} dur={dur}>
-      <div style={{position: 'absolute', left: 400, top: 538, height: 3, width: 1400 * ease(f, 0, Math.min(dur - 4, 40)), background: 'rgba(255,255,255,0.35)'}} />
+      <div style={{position: 'absolute', left: 400, top: 538, height: 3, width: 1400 * ease(f, 0, Math.min(dur - 4, 40)), background: `rgba(${look.fg},0.35)`}} />
       {its.map((it, i) => {
         const p = ease(f, 6 + i * per, 18 + i * per);
         const up = i % 2 === 0;
         return (
           <div key={i} style={{position: 'absolute', left: xs[i] - 150, top: up ? 330 : 580, width: 300, textAlign: 'center', opacity: p}}>
-            <div style={{fontFamily: DISPLAY, fontWeight: 700, fontSize: 70, color: look.accent, order: 1}}>{it.year}</div>
+            <div style={{fontFamily: look.headlineFont, fontWeight: 700, fontSize: 70, color: look.accent, order: 1}}>{it.year}</div>
             <div style={{fontFamily: SANS, fontSize: 24, lineHeight: 1.4, color: look.ink, marginTop: 8}}>{it.text}</div>
             <div style={{position: 'absolute', left: 140, top: up ? 200 : -50, width: 20, height: 20, borderRadius: 10, background: look.accent}} />
           </div>
@@ -272,11 +274,12 @@ export const Kinetic: React.FC<B & {text: string; emphasis?: string}> = ({look, 
   return (
     <Stage look={look} dur={dur} push={0.08}>
       <AbsoluteFill style={{display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 200px 0 400px'}}>
-        <div style={{fontFamily: DISPLAY, fontWeight: 700, fontSize: words.length > 6 ? 104 : 136, lineHeight: 1.05, textTransform: 'uppercase', textAlign: 'center', color: look.ink}}>
+        <div style={{fontFamily: look.headlineFont, fontWeight: 700, fontSize: (words.length > 6 ? 104 : 136) * (look.upper ? 1 : 0.9), lineHeight: 1.08,
+          textTransform: look.upper ? 'uppercase' : 'none', textAlign: 'center', color: look.ink}}>
           {words.map((w, i) => {
             const p = ease(f, i * per, i * per + 8);
             const hot = em.includes(w.toLowerCase().replace(/[^a-z0-9]/g, ''));
-            return <span key={i} style={{display: 'inline-block', marginRight: 26, opacity: p, transform: `translateY(${(1 - p) * 30}px)`, color: hot ? look.accent : look.ink}}>{w}</span>;
+            return <span key={i} style={{display: 'inline-block', marginRight: 26, opacity: p, transform: `translateY(${(1 - p) * 30}px)`, color: hot ? look.accent : look.ink, fontStyle: hot && !look.upper ? 'italic' : 'normal'}}>{w}</span>;
           })}
         </div>
       </AbsoluteFill>
@@ -284,20 +287,46 @@ export const Kinetic: React.FC<B & {text: string; emphasis?: string}> = ({look, 
   );
 };
 
-// Real footage as an accent: graded, letterboxed, slow move, optional callout label.
+// Real footage as an accent. Night: graded, letterboxed. Editorial: printed photo on the page with a caption.
+// Blueprint: full frame with drafting crop marks and a mono coordinate label.
 export const FootageShot: React.FC<B & {media?: Media; label?: string; seed: number}> = ({look, dur, media, label, seed}) => {
   const f = useCurrentFrame();
   if (!media) return label ? <Kinetic look={look} dur={dur} text={label} /> : <Stage look={look} dur={dur} />;
+  if (look.family === 'editorial') {
+    const p = ease(f, 0, 12);
+    return (
+      <AbsoluteFill style={{background: look.bg}}>
+        <div style={{position: 'absolute', left: 150, top: 90, width: 1620, height: 820, overflow: 'hidden', boxShadow: '0 24px 60px rgba(0,0,0,0.18)',
+          transform: `translateY(${(1 - p) * 20}px)`}}>
+          <MediaLayer media={media} look={{...look, wash: undefined}} seed={seed} dur={dur} push={0.05} />
+        </div>
+        {label ? <div style={{position: 'absolute', left: 150, top: 940, fontFamily: look.headlineFont, fontStyle: 'italic', fontSize: 38, color: look.ink, opacity: ease(f, 8, 20)}}>
+          <span style={{color: look.accent, fontStyle: 'normal', fontFamily: SANS, fontWeight: 700, fontSize: 22, letterSpacing: 4, marginRight: 18}}>■</span>{label}</div> : null}
+      </AbsoluteFill>
+    );
+  }
+  const blue = look.family === 'blueprint';
+  const mark = (x: number, y: number, sx: number, sy: number, k: number) => (
+    <g key={k} stroke={look.accent} strokeWidth={3} opacity={ease(f, 4, 14)}>
+      <line x1={x} y1={y} x2={x + 60 * sx} y2={y} /><line x1={x} y1={y} x2={x} y2={y + 60 * sy} />
+    </g>
+  );
   return (
     <AbsoluteFill style={{background: '#000'}}>
       <MediaLayer media={media} look={{...look, wash: undefined}} seed={seed} dur={dur} push={0.06} />
       <AbsoluteFill style={{background: 'linear-gradient(0deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 35%)'}} />
-      <div style={{position: 'absolute', left: 0, right: 0, top: 0, height: 70, background: '#000'}} />
-      <div style={{position: 'absolute', left: 0, right: 0, bottom: 0, height: 70, background: '#000'}} />
+      {blue ? (
+        <svg width={1920} height={1080} style={{position: 'absolute'}}>
+          {[mark(90, 80, 1, 1, 0), mark(1830, 80, -1, 1, 1), mark(90, 1000, 1, -1, 2), mark(1830, 1000, -1, -1, 3)]}
+        </svg>
+      ) : <>
+        <div style={{position: 'absolute', left: 0, right: 0, top: 0, height: 70, background: '#000'}} />
+        <div style={{position: 'absolute', left: 0, right: 0, bottom: 0, height: 70, background: '#000'}} />
+      </>}
       {label ? (
         <div style={{position: 'absolute', left: 130, bottom: 140, display: 'flex', alignItems: 'center', gap: 20, opacity: ease(f, 10, 24)}}>
           <div style={{width: 80 * ease(f, 8, 24), height: 2, background: look.accent}} />
-          <Label size={26}>{label}</Label>
+          <Label size={26} color="#fff">{blue ? `◎ ${label}` : label}</Label>
         </div>
       ) : null}
     </AbsoluteFill>

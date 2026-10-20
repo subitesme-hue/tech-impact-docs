@@ -7,7 +7,8 @@ import {UiExample} from '../scenes/Examples';
 import {Logo} from '../scenes/Brand';
 import {Globe, Route} from './maps';
 import {Chart, Compare, Counter, Flow, FootageShot, Icons, Kinetic, Network, Steps, Timeline, Units} from './diagrams';
-import {BackdropCtx, Duotone, Label, Stage, ease} from './kit';
+import {Contents, Gauge, Headline, PaperMap, SectionWipe, Typed, WireGlobe} from './families';
+import {BackdropCtx, Duotone, Label, LookCtx, Stage, ease} from './kit';
 
 // No regional footage found: the section's regional photo in duotone with the place callout (never a clip from the wrong country).
 const PlaceShot: React.FC<{look: Look; dur: number; back?: string; label?: string}> = ({look, dur, back, label}) => {
@@ -30,10 +31,15 @@ const PlaceShot: React.FC<{look: Look; dur: number; back?: string; label?: strin
 
 const ShotView: React.FC<{s: Shot; look: Look; dur: number; seed: number; sections: string[]; p: DocProps; back?: string}> = ({s, look, dur, seed, sections, p, back}) => {
   switch (s.kind) {
-    case 'globe': return <Globe look={look} dur={dur} focus={s.focus} region={s.region || p.region} points={s.points} arcs={s.arcs} label={s.label} />;
+    case 'globe':
+      if (look.family === 'editorial') return <PaperMap look={look} dur={dur} focus={s.focus} region={s.region || p.region} points={s.points} label={s.label} />;
+      if (look.family === 'blueprint') return <WireGlobe look={look} dur={dur} focus={s.focus} region={s.region || p.region} points={s.points} label={s.label} />;
+      return <Globe look={look} dur={dur} focus={s.focus} region={s.region || p.region} points={s.points} arcs={s.arcs} label={s.label} />;
     case 'route': return <Route look={look} dur={dur} points={s.points} mover={s.mover} compare={s.compare} label={s.label} />;
     case 'flow': return <Flow look={look} dur={dur} nodes={s.nodes} mover={s.mover} label={s.label} />;
-    case 'counter': return <Counter look={look} dur={dur} {...s} />;
+    case 'counter':
+      if (look.family === 'blueprint') return <Gauge look={look} dur={dur} value={s.value} prefix={s.prefix} suffix={s.suffix} decimals={s.decimals} label={s.label} source={s.source} />;
+      return <Counter look={look} dur={dur} {...s} />;
     case 'compare': return <Compare look={look} dur={dur} title={s.title} left={s.left} right={s.right} />;
     case 'units': return <Units look={look} dur={dur} total={s.total} highlight={s.highlight} icon={s.icon} label={s.label} />;
     case 'chart': return <Chart look={look} dur={dur} chart={s.chart} title={s.title} unit={s.unit} prefix={(s as any).prefix} points={s.points} source={s.source} />;
@@ -41,11 +47,16 @@ const ShotView: React.FC<{s: Shot; look: Look; dur: number; seed: number; sectio
     case 'network': return <Network look={look} dur={dur} center={s.center} nodes={s.nodes} />;
     case 'icons': return <Icons look={look} dur={dur} title={s.title} items={s.items} />;
     case 'timeline': return <Timeline look={look} dur={dur} items={s.items} />;
-    case 'kinetic': return <Kinetic look={look} dur={dur} text={s.text} emphasis={s.emphasis} />;
+    case 'kinetic':
+      if (look.family === 'editorial') return <Headline look={look} dur={dur} text={s.text} emphasis={s.emphasis} date={p.date} />;
+      if (look.family === 'blueprint') return <Typed look={look} dur={dur} text={s.text} emphasis={s.emphasis} />;
+      return <Kinetic look={look} dur={dur} text={s.text} emphasis={s.emphasis} />;
     case 'device': return <UiExample look={look} seed={seed} dur={dur} v={{type: 'ui', variant: s.device === 'phone' ? 'notify' : 'list', app: s.app, lines: s.lines}} />;
     case 'footage': return s.media ? <FootageShot look={look} dur={dur} media={s.media} label={s.label} seed={seed} />
       : <PlaceShot look={look} dur={dur} back={back} label={s.label} />;
-    case 'agenda': return <Agenda look={look} dur={dur} items={sections} tech={p.title || p.tech || ''} />;
+    case 'agenda':
+      if (look.family !== 'night') return <Contents look={look} dur={dur} items={sections} title={p.title || p.tech || ''} />;
+      return <Agenda look={look} dur={dur} items={sections} tech={p.title || p.tech || ''} />;
     default: return <Stage look={look} dur={dur} />;
   }
 };
@@ -59,7 +70,8 @@ const Agenda: React.FC<{look: Look; dur: number; items: string[]; tech: string}>
     <Stage look={look} dur={dur} push={0.03}>
       <div style={{position: 'absolute', left: 140, top: 230, width: 700}}>
         <Label size={24} color={look.accent} style={{opacity: ease(f, 0, 10)}}>In this episode</Label>
-        <div style={{fontFamily: DISPLAY, fontWeight: 700, fontSize: 96, lineHeight: 1.0, color: look.ink, textTransform: 'uppercase', marginTop: 26, opacity: ease(f, 3, 16)}}>{tech}</div>
+        <div style={{fontFamily: look.headlineFont, fontWeight: 700, fontSize: look.upper ? 96 : 88, lineHeight: 1.04, color: look.ink, textTransform: look.upper ? 'uppercase' : 'none',
+          marginTop: 26, opacity: ease(f, 3, 16)}}>{tech}</div>
       </div>
       <div style={{position: 'absolute', left: 1000, top: 220}}>
         {items.map((it, i) => {
@@ -67,8 +79,8 @@ const Agenda: React.FC<{look: Look; dur: number; items: string[]; tech: string}>
           const on = i === active;
           return (
             <div key={i} style={{display: 'flex', alignItems: 'center', gap: 28, height: 92, opacity: 0.3 + 0.7 * p}}>
-              <div style={{width: on ? 22 : 14, height: on ? 22 : 14, borderRadius: 11, background: on ? look.accent : 'rgba(255,255,255,0.5)', marginLeft: on ? 0 : 4}} />
-              <div style={{fontFamily: SANS, fontWeight: on ? 700 : 500, fontSize: on ? 40 : 34, color: on ? '#fff' : 'rgba(255,255,255,0.75)'}}>{it}</div>
+              <div style={{width: on ? 22 : 14, height: on ? 22 : 14, borderRadius: 11, background: on ? look.accent : `rgba(${look.fg},0.5)`, marginLeft: on ? 0 : 4}} />
+              <div style={{fontFamily: SANS, fontWeight: on ? 700 : 500, fontSize: on ? 40 : 34, color: on ? look.ink : `rgba(${look.fg},0.75)`}}>{it}</div>
             </div>
           );
         })}
@@ -80,13 +92,13 @@ const Agenda: React.FC<{look: Look; dur: number; items: string[]; tech: string}>
 // Nat Geo-style section rail on the left: where we are in the episode.
 const Rail: React.FC<{look: Look; sections: string[]; active: number}> = ({look, sections, active}) => (
   <div style={{position: 'absolute', left: 54, top: 340, width: 420, pointerEvents: 'none'}}>
-    <div style={{position: 'absolute', left: 7, top: 8, width: 1.5, height: (sections.length - 1) * 64, background: 'rgba(255,255,255,0.3)'}} />
+    <div style={{position: 'absolute', left: 7, top: 8, width: 1.5, height: (sections.length - 1) * 64, background: `rgba(${look.fg},0.3)`}} />
     {sections.map((s, i) => (
       <div key={i} style={{display: 'flex', alignItems: 'center', gap: 18, height: 64}}>
-        <div style={{width: 16, height: 16, borderRadius: 8, background: i === active ? look.accent : i < active ? 'rgba(255,255,255,0.75)' : 'transparent',
-          border: `1.5px solid ${i === active ? look.accent : 'rgba(255,255,255,0.6)'}`, zIndex: 1}} />
-        {i === active ? <div style={{fontFamily: SANS, fontWeight: 600, fontSize: 19, letterSpacing: 3, textTransform: 'uppercase', color: '#fff',
-          textShadow: '0 2px 10px rgba(0,0,0,0.8)'}}>{s}</div> : null}
+        <div style={{width: 16, height: 16, borderRadius: 8, background: i === active ? look.accent : i < active ? `rgba(${look.fg},0.75)` : 'transparent',
+          border: `1.5px solid ${i === active ? look.accent : `rgba(${look.fg},0.6)`}`, zIndex: 1}} />
+        {i === active ? <div style={{fontFamily: SANS, fontWeight: 600, fontSize: 19, letterSpacing: 3, textTransform: 'uppercase', color: look.ink,
+          textShadow: look.mode === 'dark' ? '0 2px 10px rgba(0,0,0,0.8)' : 'none'}}>{s}</div> : null}
       </div>
     ))}
   </div>
@@ -104,9 +116,10 @@ const Thumb3: React.FC<{p: DocProps; look: Look; dur: number}> = ({p, look, dur}
       <AbsoluteFill style={{background: `linear-gradient(90deg, ${look.bg}f5 0%, ${look.bg}c0 48%, rgba(0,0,0,0) 100%)`}} />
       <div style={{position: 'absolute', left: 110, top: 96}}><Logo look={look} hasLogo={p.has_logo} /></div>
       <div style={{position: 'absolute', left: 110, top: 320, width: 1100}}>
-        <div style={{display: 'inline-block', background: look.accent, color: '#0b0b10', fontFamily: MONO, fontSize: 28, letterSpacing: 4, padding: '10px 18px',
+        <div style={{display: 'inline-block', background: look.accent, color: look.onAccent, fontFamily: MONO, fontSize: 28, letterSpacing: 4, padding: '10px 18px',
           textTransform: 'uppercase'}}>{p.thumb.kicker}</div>
-        <div style={{fontFamily: DISPLAY, fontWeight: 700, fontSize: h.length > 44 ? 108 : 126, lineHeight: 1.0, color: look.ink, textTransform: 'uppercase', marginTop: 28}}>
+        <div style={{fontFamily: look.headlineFont, fontWeight: 700, fontSize: (h.length > 44 ? 108 : 126) * (look.upper ? 1 : 0.92), lineHeight: look.upper ? 1.0 : 1.06,
+          color: look.ink, textTransform: look.upper ? 'uppercase' : 'none', marginTop: 28}}>
           {parts.map((t, k) => <span key={k} style={{color: k === 1 ? look.accent : look.ink}}>{t}</span>)}
         </div>
       </div>
@@ -139,6 +152,7 @@ export const Doc3: React.FC<DocProps> = (p) => {
   const activeSection = curSeg && curSeg.kind === 'chapter' ? sections.indexOf(curSeg.title) : -1;
   const curShot = cur && cur.kind === 'shot' ? p.segments[cur.seg!].beats[cur.beat!].shots[cur.shot!] : undefined;
   return (
+    <LookCtx.Provider value={look}>
     <AbsoluteFill style={{background: look.bg}}>
       {tl.items.map((it, i) => {
         let body: React.ReactNode = null;
@@ -152,12 +166,18 @@ export const Doc3: React.FC<DocProps> = (p) => {
           const useBack = back && !['globe', 'route', 'footage'].includes(s.kind) ? back : undefined;
           body = <BackdropCtx.Provider value={useBack}><ShotView s={s} look={look} dur={it.dur} seed={i * 17 + 3} sections={sections} p={p} back={back} /></BackdropCtx.Provider>;
         }
-        return <Sequence key={i} from={it.start} durationInFrames={it.dur} name={`${it.kind}-${i}`}>{body}</Sequence>;
+        const sec = it.sectionStart && it.seg !== undefined ? sections.indexOf(p.segments[it.seg].title) : -1;
+        return <React.Fragment key={i}>
+          <Sequence from={it.start} durationInFrames={it.dur} name={`${it.kind}-${i}`}>{body}</Sequence>
+          {sec >= 0 && look.family !== 'night' ? <Sequence from={Math.max(0, it.start - 10)} durationInFrames={30} name={`wipe-${i}`}>
+            <SectionWipe look={look} title={sections[sec]} n={sec + 1} /></Sequence> : null}
+        </React.Fragment>;
       })}
       {activeSection >= 0 && curShot?.kind !== 'agenda' ? <Rail look={look} sections={sections} active={activeSection} /> : null}
-      <AbsoluteFill style={{pointerEvents: 'none', backgroundImage: `url(${staticFile('grain.png')})`, mixBlendMode: 'overlay', opacity: 0.07,
+      <AbsoluteFill style={{pointerEvents: 'none', backgroundImage: `url(${staticFile('grain.png')})`, mixBlendMode: look.mode === 'dark' ? 'overlay' : 'multiply', opacity: look.mode === 'dark' ? 0.07 : 0.05,
         backgroundPosition: `${(f * 37) % 512}px ${(f * 91) % 512}px`}} />
     </AbsoluteFill>
+    </LookCtx.Provider>
   );
 };
 export const _img = Img;

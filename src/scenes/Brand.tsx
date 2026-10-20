@@ -6,7 +6,7 @@ import {MediaLayer, ease} from '../components/Layers';
 
 export const Logo: React.FC<{look: Look; hasLogo?: boolean; size?: number}> = ({look, hasLogo, size = 1}) =>
   hasLogo ? (
-    <Img src={staticFile('logo.png')} style={{height: 64 * size, objectFit: 'contain', filter: 'brightness(0) invert(1)'}} />
+    <Img src={staticFile('logo.png')} style={{height: 64 * size, objectFit: 'contain', filter: look.mode === 'light' ? 'brightness(0)' : 'brightness(0) invert(1)'}} />
   ) : (
     <div style={{display: 'flex', alignItems: 'center', gap: 14 * size}}>
       <svg width={46 * size} height={46 * size} viewBox="0 0 46 46">

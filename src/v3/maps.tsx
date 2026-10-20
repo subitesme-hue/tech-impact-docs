@@ -31,12 +31,12 @@ export const Globe: React.FC<{look: Look; dur: number; focus: {lat: number; lon:
           <radialGradient id="oc" cx="40%" cy="35%" r="70%"><stop offset="0%" stopColor={look.panel} /><stop offset="100%" stopColor={look.bg} /></radialGradient>
         </defs>
         <circle cx={1120} cy={560} r={R + 18} fill="none" stroke={`${look.accent}22`} strokeWidth={30} />
-        <circle cx={1120} cy={560} r={R} fill="url(#oc)" stroke="rgba(255,255,255,0.25)" strokeWidth={1.5} />
-        <path d={path(GRAT) || ''} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={1} />
+        <circle cx={1120} cy={560} r={R} fill="url(#oc)" stroke={`rgba(${look.fg},0.25)`} strokeWidth={1.5} />
+        <path d={path(GRAT) || ''} fill="none" stroke={`rgba(${look.fg},0.07)`} strokeWidth={1} />
         {COUNTRIES.map((c, i) => {
           const on = hl.has(c.properties.name);
-          return <path key={i} d={path(c) || ''} fill={on ? look.accent : 'rgba(255,255,255,0.13)'} fillOpacity={on ? 0.35 + 0.45 * ease(f, 20, 45) : 1}
-            stroke={on ? look.accent : 'rgba(255,255,255,0.22)'} strokeWidth={on ? 1.4 : 0.6} />;
+          return <path key={i} d={path(c) || ''} fill={on ? look.accent : `rgba(${look.fg},0.13)`} fillOpacity={on ? 0.35 + 0.45 * ease(f, 20, 45) : 1}
+            stroke={on ? look.accent : `rgba(${look.fg},0.22)`} strokeWidth={on ? 1.4 : 0.6} />;
         })}
         {arcs.map(([a, b], k) => {
           const A = points[a], B = points[b];
@@ -56,7 +56,7 @@ export const Globe: React.FC<{look: Look; dur: number; focus: {lat: number; lon:
             <g key={k} opacity={p}>
               <circle cx={xy[0]} cy={xy[1]} r={8 + ring * 36} fill="none" stroke={look.accent2} strokeWidth={2} opacity={1 - ring} />
               <circle cx={xy[0]} cy={xy[1]} r={8} fill={look.accent2} />
-              <text x={xy[0] + 18} y={xy[1] - 14} fill="#fff" fontFamily={SANS} fontWeight={600} fontSize={24} letterSpacing={3}>{pt.name.toUpperCase()}</text>
+              <text x={xy[0] + 18} y={xy[1] - 14} fill={look.ink} fontFamily={SANS} fontWeight={600} fontSize={24} letterSpacing={3}>{pt.name.toUpperCase()}</text>
             </g>
           );
         })}
@@ -104,11 +104,11 @@ export const Route: React.FC<{look: Look; dur: number; points: Pt[]; mover?: str
             Array.from({length: 46}, (_, i) => {
               const r1 = Math.sin(i * 12.9898) * 43758.5453, r = r1 - Math.floor(r1);
               const r2 = Math.sin(i * 78.233) * 12543.123, q = r2 - Math.floor(r2);
-              return i % 2 ? <line key={i} x1={0} y1={r * 1080} x2={1920} y2={r * 1080 + (q - 0.5) * 300} stroke="rgba(255,255,255,0.07)" strokeWidth={1 + q * 5} />
-                : <line key={i} x1={r * 1920} y1={0} x2={r * 1920 + (q - 0.5) * 300} y2={1080} stroke="rgba(255,255,255,0.07)" strokeWidth={1 + q * 5} />;
+              return i % 2 ? <line key={i} x1={0} y1={r * 1080} x2={1920} y2={r * 1080 + (q - 0.5) * 300} stroke={`rgba(${look.fg},0.07)`} strokeWidth={1 + q * 5} />
+                : <line key={i} x1={r * 1920} y1={0} x2={r * 1920 + (q - 0.5) * 300} y2={1080} stroke={`rgba(${look.fg},0.07)`} strokeWidth={1 + q * 5} />;
             })
-          ) : COUNTRIES.map((c, i) => <path key={i} d={path(c) || ''} fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.28)" strokeWidth={1} />)}
-          <polyline points={xy.map((p) => p.join(',')).join(' ')} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={4} strokeDasharray="4 14" strokeLinecap="round" />
+          ) : COUNTRIES.map((c, i) => <path key={i} d={path(c) || ''} fill={`rgba(${look.fg},0.08)`} stroke={`rgba(${look.fg},0.28)`} strokeWidth={1} />)}
+          <polyline points={xy.map((p) => p.join(',')).join(' ')} fill="none" stroke={`rgba(${look.fg},0.18)`} strokeWidth={4} strokeDasharray="4 14" strokeLinecap="round" />
           <polyline points={xy.map((p) => p.join(',')).join(' ')} fill="none" stroke={look.accent} strokeWidth={5} strokeLinecap="round"
             strokeDasharray={`${draw * L} ${L}`} />
           {xy.map((p, k) => {
@@ -116,7 +116,7 @@ export const Route: React.FC<{look: Look; dur: number; points: Pt[]; mover?: str
             return (
               <g key={k} opacity={o}>
                 <circle cx={p[0]} cy={p[1]} r={13} fill={look.bg} stroke={look.accent2} strokeWidth={4} />
-                <text x={p[0]} y={p[1] + (k % 2 ? 56 : -30)} textAnchor="middle" fill="#fff" fontFamily={SANS} fontWeight={600} fontSize={26} letterSpacing={4}>
+                <text x={p[0]} y={p[1] + (k % 2 ? 56 : -30)} textAnchor="middle" fill={look.ink} fontFamily={SANS} fontWeight={600} fontSize={26} letterSpacing={4}>
                   {pts[k].name.toUpperCase()}</text>
               </g>
             );
@@ -124,16 +124,16 @@ export const Route: React.FC<{look: Look; dur: number; points: Pt[]; mover?: str
         </svg>
         <div style={{position: 'absolute', left: mx - 34, top: my - 34, width: 68, height: 68, borderRadius: 34, background: look.accent,
           display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 40px ${look.accent}`, opacity: ease(f, 12, 18)}}>
-          <div style={{transform: `rotate(${(ang * 180) / Math.PI - (mover === 'Plane' ? -45 : 0)}deg)`}}><Icon name={mover} size={38} color="#0b0b10" stroke={2} /></div>
+          <div style={{transform: `rotate(${(ang * 180) / Math.PI - (mover === 'Plane' ? -45 : 0)}deg)`}}><Icon name={mover} size={38} color={look.onAccent} stroke={2} /></div>
         </div>
       </AbsoluteFill>
       {compare.length ? (
         <div style={{position: 'absolute', right: 110, bottom: 100, display: 'flex', gap: 20}}>
           {compare.slice(0, 2).map((c, i) => (
-            <div key={i} style={{padding: '18px 26px', borderRadius: 16, background: 'rgba(0,0,0,0.45)', border: `1px solid ${i ? look.accent : 'rgba(255,255,255,0.25)'}`,
+            <div key={i} style={{padding: '18px 26px', borderRadius: 16, background: 'rgba(0,0,0,0.45)', border: `1px solid ${i ? look.accent : `rgba(${look.fg},0.25)`}`,
               opacity: ease(f, 30 + i * 12, 44 + i * 12)}}>
               <Label size={18} color={look.dim}>{c.label}</Label>
-              <div style={{fontFamily: SANS, fontWeight: 800, fontSize: 54, color: i ? look.accent : '#fff', marginTop: 6}}>{c.value}</div>
+              <div style={{fontFamily: SANS, fontWeight: 800, fontSize: 54, color: i ? look.accent : look.ink, marginTop: 6}}>{c.value}</div>
             </div>
           ))}
         </div>

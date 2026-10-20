@@ -31,6 +31,16 @@ before the built-in generated beds. (Licensed overlay/transition clips can be wi
 | [Broadcast Background](https://motionarray.com/stock-video/broadcast-background-2191074/) | News-studio looping background | outro / ident background |
 | [3D Technology World Map](https://motionarray.com/stock-video/3d-technology-world-map-2180946/) | Dotted digital world map with glowing hot spots | `WorldMap` scene |
 
+## Visual families (rotate daily, never the same family two days running)
+| Family | Built from these references | What changes |
+|---|---|---|
+| **Night data** (looks 0–3) | AI Motion UI Kit, 3D Technology World Map, Broadcast Background | dark glow stage, dotted grid, ring nodes, 3D globe, kinetic caps type, letterboxed footage, hard cuts |
+| **Editorial** (looks 4–5) | Newspaper History, Vintage Documentary, Multiframe Media Slideshow, 3D Photo Animator | newsprint paper, serif headlines, solid tiles, flat ink map, printed newspaper headline pages, magazine contents page, photos printed on the page with captions, paper wipe between sections |
+| **Blueprint** (looks 6–7) | Tech Show, AI Motion UI Kit (gauges), technical drawing | drafting grid, mono labels, dashed boxes, wireframe globe with coordinates, arc gauges for numbers, typed statements with cursor, spec-sheet contents, scan-line between sections, crop marks on footage |
+
+## Storytelling formats (rotate daily; the six sections stay)
+explainer · one-story (one real deployment as the thread) · follow-the-money · then-now-next · myth-vs-reality
+
 ## Rules every video follows
 1. First frame = the thumbnail (headline readable at frame 0).
 2. First ~30 s = "In this film" summary, then the documentary chapters (whole video ≤ 6 min).

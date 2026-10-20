@@ -106,9 +106,21 @@ const EXAMPLE = {kind: 'summary', title: 'In this episode', beats: [
       {kind: 'globe', focus: {lat: 21.4, lon: 39.9}, region: 'GCC', points: [{name: 'Mina', lat: 21.41, lon: 39.89}], label: 'Makkah, Saudi Arabia', at: 'In one'},
       {kind: 'footage', query: 'delivery drone flying over city', at: 'licensed'}]},
   {narration: 'Today: how medical drones work, the problem they solve, what holds them back, where the money is, who flies them now, and what comes next.', shots: [{kind: 'agenda'}]}]};
+// Storytelling device for this episode (n8n rotates it daily) — same six sections, a different way of telling them.
+const FORMATS = {
+  explainer: 'THE EXPLAINER: a clear, curious guide walks the viewer through the idea step by step, like a great science explainer.',
+  'one-story': 'ONE STORY: carry ONE real deployment, organisation or community from the research through all six sections (name it only as the research names it; never invent a person, quote or detail). Return to it at the start of every section so it becomes the thread of the film.',
+  'follow-the-money': 'FOLLOW THE MONEY: tell it through costs, prices, investment and who pays whom. Each section opens with a money fact or question from the research, and the business opportunity section is the climax.',
+  'then-now-next': 'THEN, NOW, NEXT: frame the film as a journey through time — how this problem was handled before, what changes now, and what the next decade could look like (forecasts said as forecasts). Use a timeline shot early.',
+  'myth-vs-reality': 'MYTH VS REALITY: each section opens with a common assumption people have about this technology or region, then the research shows what is really happening. Fair and precise, never mocking.',
+};
+const fmtKey = FORMATS[t.format] ? t.format : 'explainer';
+console.log('format:', fmtKey, '| look:', t.look);
 let final = null, prevProblems = [], prevDraft = null, best = null;
 for (let run = 0; run < 3 && !final; run++) {
   const system = `You are an independent documentary maker with the instincts of a top executive producer, a techpreneur and a tech journalist. You make "T&I Tech Impact": 2:30-3:30 minute animated documentary episodes (the feel of a Nat Geo / Vox explainer) about one trending technology. The goal: educate and entertain founders, executives and curious viewers so they subscribe and visit tai.news.
+
+STORYTELLING DEVICE FOR THIS EPISODE: ${FORMATS[fmtKey]}
 
 HOW THESE FILMS WORK (follow exactly):
 - The narration is the spine. The picture changes on the words: a new shot every 7-12 spoken words (about every 2.5-4 seconds). Every shot must literally show what is being said at that moment.
@@ -209,7 +221,7 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
   const srcLines = (res.research.sources || []).slice(0, 6).map((x) => `- ${x.title}: ${x.url}`).join('\n');
   const ytDesc = `${cut(p.youtube_description, 900)}\n\nSources:\n${srcLines}\n\nStock footage: Pexels and Pixabay contributors.\nMore episodes and news: https://tai.news\n\n#TechImpact #TandINews`;
   const props = {
-    id: t.tag, date: t.date, look: t.look, voice: t.voice, region: t.region, sector: res.sector, tech: cut(res.research.tech, 60),
+    id: t.tag, date: t.date, look: t.look, format: fmtKey, voice: t.voice, region: t.region, sector: res.sector, tech: cut(res.research.tech, 60),
     title: cut(s.title, 70), thumb: s.thumb || {}, segments: segs,
     outro: s.outro || {narration: 'For more stories of technology with real impact, visit T and I News.'},
     sources: res.research.sources || [],
