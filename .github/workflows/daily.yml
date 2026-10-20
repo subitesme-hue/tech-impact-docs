@@ -1,0 +1,39 @@
+name: Daily episode (21:00 Dubai, posts 23:30)
+
+# Replaces the n8n schedule: picks today's region / sector / look / format / voice from history.json and starts
+# render.yml with posting on. A workflow_dispatch sent with the built-in GITHUB_TOKEN does start the other workflow
+# (GitHub's documented exception for workflow_dispatch), so no personal access token is needed.
+on:
+  schedule:
+    - cron: '0 17 * * *'   # 17:00 UTC = 21:00 Dubai
+  workflow_dispatch:
+    inputs:
+      post:
+        description: 'Post when rendered? (true/false). Manual runs default to false = test.'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pick today's topic
+        run: node scripts/pick_topic.mjs
+      - name: Start the render
+        env:
+          GH_TOKEN: ${{ github.token }}
+          POST: ${{ github.event_name == 'schedule' && 'true' || inputs.post }}
+        run: |
+          if [ ! -s topic.json ]; then echo "Nothing to do today."; exit 0; fi
+          TAG=$(node -p "require('./topic.json').tag")
+          VOICE=$(node -p "require('./topic.json').voice")
+          gh workflow run render.yml --ref main -f topic="$(cat topic.json)" -f tag="$TAG" -f voice="$VOICE" -f post="$POST"
+          echo "Started render $TAG (post=$POST)"

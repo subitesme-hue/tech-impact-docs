@@ -150,10 +150,21 @@ jobs:
             --title "$TITLE" --notes "Rendered by run ${{ github.run_id }}"
 
       - name: Remember used stock clips (no repeats across days)
+        env:
+          TOPIC: ${{ inputs.topic }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add used_media.json && git commit -qm "Used media after ${{ inputs.tag }}" && git push -q || echo "nothing to commit"
+          # daily runs also append the episode to history.json (the topic picker reads it to rotate region, look, format, voice)
+          if [ -n "$TOPIC" ] && [ -f out/props.json ]; then
+            node -e "
+            const fs=require('fs');const p=JSON.parse(fs.readFileSync('out/props.json'));const h=fs.existsSync('history.json')?JSON.parse(fs.readFileSync('history.json')):[];
+            h.push({date:p.date,region:p.region,sector:p.sector,look:p.look,format:p.format,voice:p.voice,tag:'${{ inputs.tag }}',title:p.title,post:'${{ inputs.post }}'});
+            fs.writeFileSync('history.json',JSON.stringify(h,null,1));"
+            git add history.json
+          fi
+          git add used_media.json
+          git commit -qm "Used media + history after ${{ inputs.tag }}" && (git pull -q --rebase && git push -q) || echo "nothing to commit"
 
       - name: Post via PostEverywhere
         if: ${{ inputs.post == 'true' }}
