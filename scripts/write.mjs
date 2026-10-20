@@ -158,7 +158,7 @@ EXAMPLE of the intro written correctly (different topic, do not copy): ${JSON.st
 
 THUMBNAIL "thumb": {"kicker":"<Country or region> · <the tech>", "headline": 5-9 words with a real number or outcome, "highlight": 1-3 words copied from the headline, "query": a striking literal photo query that names the country (e.g. "Kenyan farmer holding phone in field"), "focus": {"lat","lon"} of the main place}
 "title": 3-6 words.
-SOCIAL "post": "youtube_title" (max 90, truthful curiosity + keyword), "youtube_description" (2 short paragraphs, max 700 chars), "youtube_tags" (8-15), "linkedin" (120-200 words: insight-led opening, 3 takeaways incl. the business opportunity, a question, then "Watch the full episode: https://tai.news" and 3-5 hashtags), "x" (a hook of AT MOST 35 characters including spaces, no emojis, no links, no hashtags, must be true to the research).
+SOCIAL "post": "youtube_title" (max 90, truthful curiosity + keyword), "youtube_description" (2 short paragraphs, max 700 chars), "youtube_tags" (8-15), "linkedin" (120-200 words: insight-led opening, 3 takeaways incl. the business opportunity, a question, then the exact line "Subscribe to https://tai.news for more coverage and stories" and 3-5 hashtags), "x" (a hook of AT MOST 35 characters including spaces, no emojis, no links, no hashtags, must be true to the research).
 Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
   let user = `Region: ${t.region}\nResearch (the only facts you may use):\n${JSON.stringify(res.research)}`;
   if (prevDraft) user += `\n\nYOUR PREVIOUS DRAFT:\n${JSON.stringify(prevDraft)}\n\nIt was rejected for: ${prevProblems.join('; ')}.\nReturn the full corrected JSON. Change only what is needed to fix these problems; keep everything else.`;
@@ -220,7 +220,7 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
 
   const p = s.post || {};
   const srcLines = (res.research.sources || []).slice(0, 6).map((x) => `- ${x.title}: ${x.url}`).join('\n');
-  const ytDesc = `${cut(p.youtube_description, 900)}\n\nSources:\n${srcLines}\n\nStock footage: Pexels and Pixabay contributors.\nMore episodes and news: https://tai.news\n\n#TechImpact #TandINews`;
+  const ytDesc = `${cut(p.youtube_description, 900)}\n\nSources:\n${srcLines}\n\nStock footage: Pexels and Pixabay contributors.\nSubscribe to https://tai.news for more coverage and stories\n\n#TechImpact #TandINews`;
   const props = {
     id: t.tag, date: t.date, look: t.look, format: fmtKey, voice: t.voice, region: t.region, sector: res.sector, tech: cut(res.research.tech, 60),
     title: cut(s.title, 70), thumb: s.thumb || {}, segments: segs,

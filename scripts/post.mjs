@@ -46,6 +46,20 @@ if (yt && props.timeline) {
   yt.content = yt.content.includes('Sources:') ? yt.content.replace('Sources:', block + 'Sources:') : yt.content + '\n\n' + block;
 }
 
+// Call to action on LinkedIn, Facebook and YouTube captions (user's wording, 21 Oct 2026). X keeps its own hook + link reply.
+const CTA = 'Subscribe to https://tai.news for more coverage and stories';
+const withCta = (t) => {
+  if (!t) return t;
+  let s = String(t)
+    .replace(/(Watch the full (episode|documentary)|Full episode on T&I News|More episodes and news|Watch more at)\s*:?\s*https:\/\/tai\.news\/?/gi, CTA)
+    .replace(/More at https:\/\/tai\.news\/?/gi, CTA);
+  if (!s.includes(CTA)) s = s.replace(/(\n\s*(#\w+\s*)+)$/, `\n\n${CTA}$1`) === s ? `${s}\n\n${CTA}` : s.replace(/(\n\s*(#\w+\s*)+)$/, `\n\n${CTA}$1`);
+  return s;
+};
+const pc = post.main.platform_content || {};
+for (const k of ['linkedin', 'facebook', 'youtube']) if (pc[k]?.content) pc[k].content = withCta(pc[k].content);
+post.main.content = withCta(post.main.content);
+
 const results = {};
 // ---- 1. full film
 const mainMedia = await upload('out/video.mp4', `${props.id}.mp4`); // upload first, so the post goes out right on time
