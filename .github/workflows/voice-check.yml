@@ -14,6 +14,10 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        extra: ['', 'spacy==3.8.7', 'numpy<2.3', 'spacy==3.8.7 numpy<2.3']
     steps:
       - uses: actions/setup-python@v5
         with:
@@ -24,10 +28,11 @@ jobs:
           pip install -q soundfile numpy
           pip install -q torch --index-url https://download.pytorch.org/whl/cpu
           pip install -q "${{ inputs.kokoro }}"
+          [ -n "${{ matrix.extra }}" ] && pip install -q ${{ matrix.extra }} || true
       - name: Init KPipeline and speak one line (full traceback)
         run: |
           {
-            echo '== versions'; pip freeze | grep -iE '^(kokoro|misaki|torch|numpy|spacy|thinc|transformers|huggingface|phonemizer|espeakng|num2words|blis|loguru)' || true
+            echo '== extra: ${{ matrix.extra }}'; echo '== versions'; pip freeze | grep -iE '^(kokoro|misaki|torch|numpy|spacy|thinc|transformers|huggingface|phonemizer|espeakng|num2words|blis|loguru)' || true
             echo; echo '== run'
             python - <<'PY' 2>&1
           import traceback
@@ -48,5 +53,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete diag-voice -y --cleanup-tag -R ${{ github.repository }} 2>/dev/null || true
-          gh release create diag-voice --prerelease --title "DIAG voice" --notes-file /tmp/voice.md -R ${{ github.repository }}
+          T="diag-voice-${{ strategy.job-index }}"
+          gh release delete "$T" -y --cleanup-tag -R ${{ github.repository }} 2>/dev/null || true
+          gh release create "$T" --prerelease --title "DIAG voice ${{ matrix.extra }}" --notes-file /tmp/voice.md -R ${{ github.repository }}
