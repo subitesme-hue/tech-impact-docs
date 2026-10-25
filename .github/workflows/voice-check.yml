@@ -17,7 +17,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        extra: ['', 'spacy==3.8.7', 'numpy<2.3', 'spacy==3.8.7 numpy<2.3']
+        extra:
+          - 'pip install -q https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl'
+          - 'pip install -q --force-reinstall --no-deps numpy==2.2.6'
+          - 'pip install -q --force-reinstall --no-deps numpy==2.2.6 && pip install -q https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl'
+          - 'pip install -q --force-reinstall --no-deps numpy==2.3.5'
     steps:
       - uses: actions/setup-python@v5
         with:
@@ -28,11 +32,12 @@ jobs:
           pip install -q soundfile numpy
           pip install -q torch --index-url https://download.pytorch.org/whl/cpu
           pip install -q "${{ inputs.kokoro }}"
-          [ -n "${{ matrix.extra }}" ] && pip install -q ${{ matrix.extra }} || true
+          bash -c "${{ matrix.extra }}" || echo "extra step failed"
+          python -c "import numpy, spacy; print('numpy', numpy.__version__, 'spacy', spacy.__version__)"
       - name: Init KPipeline and speak one line (full traceback)
         run: |
           {
-            echo '== extra: ${{ matrix.extra }}'; echo '== versions'; pip freeze | grep -iE '^(kokoro|misaki|torch|numpy|spacy|thinc|transformers|huggingface|phonemizer|espeakng|num2words|blis|loguru)' || true
+            echo '== extra: ${{ matrix.extra }}'; echo '== versions'; pip freeze | grep -iE '^(en.core|kokoro|misaki|torch|numpy|spacy|thinc|transformers|huggingface|phonemizer|espeakng|num2words|blis|loguru)' || true
             echo; echo '== run'
             python - <<'PY' 2>&1
           import traceback
