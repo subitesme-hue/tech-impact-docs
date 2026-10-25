@@ -51,6 +51,7 @@ try:
     ENGINE = 'kokoro (word timestamps)'
 except Exception as e:  # local fallback: onnx voice, word times spread by length
     print('KPipeline unavailable -> onnx fallback:', e)
+    FALLBACK_REASON = f'{type(e).__name__}: {e}'[:300]
     from kokoro_onnx import Kokoro
     kdir = os.environ.get('KOKORO_DIR', os.path.join(ROOT, 'models'))
     _k = Kokoro(os.path.join(kdir, 'kokoro-v1.0.onnx'), os.path.join(kdir, 'voices-v1.0.bin'))
@@ -177,6 +178,8 @@ sf.write(os.path.join(work, 'vo.wav'), track, SR)
 props['timeline'] = {'fps': FPS, 'total': total, 'summaryEnd': round(summary_end * FPS), 'items': items}
 props['voice'] = voice
 props['voice_engine'] = ENGINE
+if 'FALLBACK_REASON' in globals():
+    props['voice_fallback_reason'] = FALLBACK_REASON
 props['has_logo'] = os.path.exists(os.path.join(ROOT, 'public', 'logo.png'))
 json.dump(props, open(os.path.join(ROOT, 'props.render.json'), 'w', encoding='utf-8'), ensure_ascii=False)
 json.dump({'fps': FPS, 'total_sec': total / FPS, 'summary_end_sec': summary_end,

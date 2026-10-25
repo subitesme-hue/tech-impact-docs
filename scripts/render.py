@@ -45,6 +45,6 @@ run(['ffmpeg', '-v', 'error', '-y', '-i', video, '-frames:v', '1', '-q:v', '2', 
 
 dur = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', video],
                            capture_output=True, text=True).stdout.strip() or 0)
-json.dump({'duration_sec': dur, 'summary_sec': end, 'voice': props.get('voice'), 'voice_engine': props.get('voice_engine'), 'look': props.get('look'),
+json.dump({'duration_sec': dur, 'summary_sec': end, 'voice': props.get('voice'), 'voice_engine': props.get('voice_engine'), 'voice_fallback_reason': props.get('voice_fallback_reason'), 'look': props.get('look'),
            'media_stats': props.get('media_stats', {}), 'credits': props.get('media_credits', [])}, open(os.path.join(out, 'meta.json'), 'w'), indent=2)
 print(f'done: {dur:.1f}s film, {end:.1f}s summary, voice {props.get("voice")}')
