@@ -18,10 +18,10 @@ jobs:
       fail-fast: false
       matrix:
         extra:
-          - 'pip install -q https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl'
-          - 'pip install -q --force-reinstall --no-deps numpy==2.2.6'
-          - 'pip install -q --force-reinstall --no-deps numpy==2.2.6 && pip install -q https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl'
-          - 'pip install -q --force-reinstall --no-deps numpy==2.3.5'
+          - 'pip install -q --force-reinstall --no-deps "preshed==3.0.9"'
+          - 'pip install -q --force-reinstall --no-deps "cymem==2.0.10" "preshed==3.0.9" "murmurhash==1.0.12"'
+          - 'pip install -q "spacy==3.8.2" "thinc==8.3.4" "blis==1.0.1" "preshed==3.0.9" "cymem==2.0.10" "murmurhash==1.0.12" "numpy<2.3"'
+          - 'pip install -q --force-reinstall --no-deps "srsly==2.4.8"'
     steps:
       - uses: actions/setup-python@v5
         with:
@@ -37,7 +37,7 @@ jobs:
       - name: Init KPipeline and speak one line (full traceback)
         run: |
           {
-            echo '== extra: ${{ matrix.extra }}'; echo '== versions'; pip freeze | grep -iE '^(en.core|kokoro|misaki|torch|numpy|spacy|thinc|transformers|huggingface|phonemizer|espeakng|num2words|blis|loguru)' || true
+            echo '== extra: ${{ matrix.extra }}'; echo '== versions'; pip freeze | grep -iE '^(preshed|cymem|murmurhash|srsly|en.core|kokoro|misaki|torch|numpy|spacy|thinc|transformers|huggingface|phonemizer|espeakng|num2words|blis|loguru)' || true
             echo; echo '== run'
             python - <<'PY' 2>&1
           import traceback
