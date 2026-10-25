@@ -22,7 +22,7 @@ export const MONO = "'JetBrains Mono', monospace";
 // n8n rotates so consecutive episodes never share a family.
 export type Look = {
   name: string;
-  family: 'night' | 'editorial' | 'blueprint';
+  family: 'night' | 'editorial' | 'blueprint' | 'block';
   mode: 'dark' | 'light';
   stage: 'night' | 'paper' | 'blueprint';
   node: 'ring' | 'solid' | 'box';
@@ -67,6 +67,9 @@ export const LOOKS: Look[] = [
   {name: 'blueprint-graphite', family: 'blueprint', mode: 'dark', stage: 'blueprint', node: 'box', bg: '#15171a', panel: '#23262b', ink: '#f0eee9', dim: '#a3a29c',
     fg: '240,238,233', accent: '#ff8a3d', accent2: '#ffd2a8', onAccent: '#15171a', grade: 'contrast(1.06) saturate(0.8)', grain: 0.12, transitions: [],
     headlineFont: DISPLAY, labelFont: MONO, upper: true},
+  // block: a different ENGINE (src/v4/ColorBlock.tsx) — flat colour fields + one travelling dot; these values are only fallbacks
+  ...[0, 1, 2].map((k): Look => ({name: `block-${k}`, family: 'block', mode: 'light', stage: 'paper', node: 'solid', bg: '#ECE8DF', panel: '#ECE8DF', ink: '#121212',
+    dim: '#555', fg: '18,18,18', accent: '#FF4A1C', accent2: '#1D3BFF', onAccent: '#fff', grade: 'none', grain: 0, transitions: [], headlineFont: SANS, labelFont: MONO, upper: false})),
 ];
 
 export const lookOf = (i: number) => LOOKS[((i % LOOKS.length) + LOOKS.length) % LOOKS.length];
