@@ -15,8 +15,8 @@ const CFG = {
     'Accessibility', 'Mining and resources', 'Media and culture'],
   skip_dates: ['2026-10-20', '2026-10-25'], // 25 Oct: 'Solar After Sunset' posted by hand
 };
-const LOOK_ORDER = [0, 4, 6, 1, 5, 7, 2, 4, 6, 3, 5, 7]; // 0-3 night, 4-5 editorial, 6-7 blueprint (src/theme.ts)
-const FAMILY = (l) => (l <= 3 ? 'night' : l <= 5 ? 'editorial' : 'blueprint');
+const LOOK_ORDER = [9, 5, 10, 7, 8, 1, 9, 4, 10, 6, 8, 3]; // 0-3 night, 4-5 editorial, 6-7 blueprint, 8-10 Color Block engine (src/theme.ts)
+const FAMILY = (l) => (l <= 3 ? 'night' : l <= 5 ? 'editorial' : l <= 7 ? 'blueprint' : 'block');
 const FORMATS = ['explainer', 'one-story', 'follow-the-money', 'then-now-next', 'myth-vs-reality'];
 
 const rows = fs.existsSync('history.json') ? JSON.parse(fs.readFileSync('history.json', 'utf8')) : [];
