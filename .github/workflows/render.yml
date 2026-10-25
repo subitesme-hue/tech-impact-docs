@@ -55,6 +55,9 @@ jobs:
           # Kokoro (PyTorch) gives word timestamps so cuts land on the spoken words; CPU wheels only.
           pip install -q torch --index-url https://download.pytorch.org/whl/cpu
           pip install -q "kokoro>=0.9.4" 2>&1 | tail -5 || echo "kokoro (torch) install failed -> voice.py falls back to kokoro-onnx"
+          # preshed 3.0.14 (Oct 2026) crashes spaCy's tokenizer ("Python int too large to convert to C ssize_t"), which kills
+          # Kokoro's word timestamps. 3.0.9 verified working in voice-check.yml (spaCy 3.8.16, numpy 2.4.6).
+          pip install -q --force-reinstall --no-deps "preshed==3.0.9"
           python -c "import kokoro, torch; print('kokoro', kokoro.__version__ if hasattr(kokoro, '__version__') else '?', 'torch', torch.__version__)" || echo "kokoro import failed"
 
       - name: Cache Kokoro (torch) weights
