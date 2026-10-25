@@ -13,7 +13,7 @@ const CFG = {
     'Logistics', 'Retail and e-commerce', 'Construction and housing', 'Transport and mobility', 'Tourism', 'Public services',
     'Climate and environment', 'Telecommunications', 'Food security', 'Insurance', 'Jobs and skills', 'Disaster response',
     'Accessibility', 'Mining and resources', 'Media and culture'],
-  skip_dates: ['2026-10-20'],
+  skip_dates: ['2026-10-20', '2026-10-25'], // 25 Oct: 'Solar After Sunset' posted by hand
 };
 const LOOK_ORDER = [0, 4, 6, 1, 5, 7, 2, 4, 6, 3, 5, 7]; // 0-3 night, 4-5 editorial, 6-7 blueprint (src/theme.ts)
 const FAMILY = (l) => (l <= 3 ? 'night' : l <= 5 ? 'editorial' : 'blueprint');
@@ -23,7 +23,9 @@ const rows = fs.existsSync('history.json') ? JSON.parse(fs.readFileSync('history
 const DAY = 86400000, DUBAI = 4 * 3600000;
 const now = Date.now();
 const day = Math.floor((now + DUBAI) / DAY);
-const date = new Date(now + DUBAI).toISOString().slice(0, 10);
+// a scheduled run that GitHub starts very late (after midnight Dubai) still belongs to the previous evening's slot
+const dubaiHour = new Date(now + DUBAI).getUTCHours();
+const date = new Date(now + DUBAI - (process.env.SCHEDULED === 'true' && dubaiHour < 12 ? DAY : 0)).toISOString().slice(0, 10);
 fs.writeFileSync('reuse.json', '');
 if (CFG.skip_dates.includes(date) || rows.some((r) => r.date === date && r.post !== 'false')) {
   console.log(`No episode needed for ${date} (skip date or already made).`);

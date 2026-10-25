@@ -25,6 +25,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: tech-impact-render
@@ -192,3 +193,5 @@ jobs:
           { echo "Run ${{ github.run_id }} failed."; for f in out/logs/*.log; do [ -f "$f" ] && { echo; echo "== $f =="; tail -n 80 "$f"; }; done; } > /tmp/diag.md
           gh release delete "diag-${{ inputs.tag }}" -y --cleanup-tag 2>/dev/null || true
           gh release create "diag-${{ inputs.tag }}" --prerelease --title "DIAG ${{ inputs.tag }}" --notes-file /tmp/diag.md
+          # tell the owner: GitHub emails new issues to the repo owner
+          gh issue create --title "Episode failed: ${{ inputs.tag }}" --body "The episode did not render, so nothing was posted. Details: https://github.com/${{ github.repository }}/releases/tag/diag-${{ inputs.tag }}" || true

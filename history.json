@@ -20,7 +20,7 @@
   "title": "AI Flood Warnings, South Asia"
  },
  {
-  "date": "2026-10-21",
+  "date": "2026-10-25",
   "region": "Middle East",
   "sector": "Energy",
   "look": 4,
@@ -28,6 +28,6 @@
   "voice": "af_bella",
   "tag": "doc-2026-10-21-middle-east-energy-v6",
   "title": "Solar After Sunset",
-  "post": "false"
+  "post": "true"
  }
 ]

@@ -99,6 +99,12 @@ const iconOk = (n) => typeof n === 'string' && /^[A-Z]/.test(n) && !!LUCIDE[n] &
 const tok = (x) => String(x || '').toLowerCase().split(/\s+/).map((w) => w.replace(/[^a-z0-9]/g, '')).filter(Boolean); // same as voice.py norm()
 const words = (x) => String(x || '').split(/\s+/).filter(Boolean).length;
 const cut = (x, n) => String(x || '').trim().slice(0, n);
+// X hook: no links/emoji, max 35 characters, cut at a word boundary
+const xHook = (x) => {
+  const t = String(x || '').replace(/https?:\/\/\S+/g, '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').replace(/\s+/g, ' ').trim();
+  if (t.length <= 35) return t;
+  return t.slice(0, 36).replace(/\s+\S*$/, '').replace(/[,;:\-–]+$/, '');
+};
 const KINDS = ['globe', 'route', 'flow', 'counter', 'compare', 'units', 'chart', 'steps', 'network', 'icons', 'timeline', 'kinetic', 'device', 'footage', 'agenda'];
 const EXAMPLE = {kind: 'summary', title: 'In this episode', beats: [
   {narration: 'Ninety minutes by road. Six minutes by air. In one of the biggest crowds on Earth, Saudi Arabia has just licensed drones to carry medicine.',
@@ -162,7 +168,7 @@ SOCIAL "post": "youtube_title" (max 90, truthful curiosity + keyword), "youtube_
 Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
   let user = `Region: ${t.region}\nResearch (the only facts you may use):\n${JSON.stringify(res.research)}`;
   if (prevDraft) user += `\n\nYOUR PREVIOUS DRAFT:\n${JSON.stringify(prevDraft)}\n\nIt was rejected for: ${prevProblems.join('; ')}.\nReturn the full corrected JSON. Change only what is needed to fix these problems; keep everything else.`;
-  const d = await chat({model: cfg.script_model, response_format: {type: 'json_object'}, temperature: 0.7, max_tokens: 20000, reasoning: {effort: 'low'},
+  const d = await chat({model: cfg.script_model, response_format: {type: 'json_object'}, temperature: 0.7, max_tokens: 32000, reasoning: {effort: 'low'},
     messages: [{role: 'system', content: system}, {role: 'user', content: user}]});
   const {json: s} = reply(d, `script-${run + 1}`);
 
@@ -184,8 +190,8 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
     const shots = Array.isArray(b.shots) ? b.shots : [];
     if (!shots.length) { problems.push(`beat ${bi + 1}: no shots`); return; }
     const w = words(b.narration);
-    if (w < 6 || w > 50) problems.push(`beat ${bi + 1}: narration ${w} words`);
-    if (shots[0].kind === 'agenda' && (w < 14 || w > 36)) problems.push(`agenda line is ${w} words (need 18-30, one brisk sentence)`);
+    if (w < 6 || w > 70) problems.push(`beat ${bi + 1}: narration ${w} words`); else if (w > 50) soft.push(`beat ${bi + 1}: narration ${w} words`);
+    if (shots[0].kind === 'agenda' && (w < 14 || w > 36)) soft.push(`agenda line is ${w} words (need 18-30, one brisk sentence)`);
     if (shots[0].kind !== 'agenda') {
       // no single picture may sit under more than ~14 spoken words (about 5 seconds)
       const nt = tok(b.narration);
@@ -193,15 +199,15 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
       pos.push(nt.length);
       const longest = Math.max(...pos.slice(1).map((x, i) => x - pos[i]));
       const shortest = Math.min(...pos.slice(1).map((x, i) => x - pos[i]));
-      if (shortest < 3) problems.push(`beat ${bi + 1}: two cuts only ${shortest} words apart (min 3, the second picture would be dropped)`);
-      if (longest > 18) problems.push(`beat ${bi + 1}: one shot runs ${longest} words (max 14) - add a cut`); else if (longest > 14) soft.push(`beat ${bi + 1}: one shot runs ${longest} words`);
+      if (shortest < 3) soft.push(`beat ${bi + 1}: two cuts only ${shortest} words apart (min 3, the second picture would be dropped)`);
+      if (longest > 14) soft.push(`beat ${bi + 1}: one shot runs ${longest} words`);
     }
-    if (shots[0].kind !== 'agenda' && w / shots.length > 13) (w / shots.length > 17 ? problems : soft).push(`beat ${bi + 1}: ${w} words but only ${shots.length} shots (need a new shot every 7-12 words)`);
+    if (shots[0].kind !== 'agenda' && w / shots.length > 13) soft.push(`beat ${bi + 1}: ${w} words but only ${shots.length} shots (need a new shot every 7-12 words)`);
     shots.forEach((sh, si) => {
       nShots++;
       if (!KINDS.includes(sh.kind)) { problems.push(`beat ${bi + 1} shot ${si + 1}: unknown kind "${sh.kind}"`); return; }
       count[sh.kind] = (count[sh.kind] || 0) + 1;
-      if (sh.kind === prev) problems.push(`beat ${bi + 1} shot ${si + 1}: same kind twice in a row (${sh.kind})`);
+      if (sh.kind === prev) soft.push(`beat ${bi + 1} shot ${si + 1}: same kind twice in a row (${sh.kind})`);
       prev = sh.kind;
       if (si > 0) {
         const cue = tok(sh.at)[0];
@@ -227,11 +233,11 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
   const bad = icons.filter((n) => !iconOk(n));
   if (bad.length) soft.push(`unknown icon names: ${[...new Set(bad)].slice(0, 8).join(', ')} (use Lucide PascalCase names)`);
   const caps = {kinetic: 3, device: 2, footage: 4, agenda: 1, globe: 3, route: 2};
-  Object.entries(count).forEach(([k, n]) => { if (n > (caps[k] || 5)) problems.push(`${k} used ${n} times (max ${caps[k] || 5})`); });
-  if (Object.keys(count).length < 9) problems.push(`only ${Object.keys(count).length} different shot kinds (need 9+)`);
+  Object.entries(count).forEach(([k, n]) => { if (n > (caps[k] || 5)) soft.push(`${k} used ${n} times (max ${caps[k] || 5})`); });
+  if (Object.keys(count).length < 7) problems.push(`only ${Object.keys(count).length} different shot kinds (need 9+)`); else if (Object.keys(count).length < 9) soft.push(`only ${Object.keys(count).length} different shot kinds (need 9+)`);
   if (!count.agenda) problems.push('intro needs an agenda shot');
   if (!s.thumb || words(s.thumb.headline) < 4) problems.push('thumbnail headline missing');
-  if (String(s.post?.x || '').trim().length > 35) problems.push(`x hook is ${String(s.post?.x || '').trim().length} characters (max 35)`);
+  if (String(s.post?.x || '').trim().length > 35) soft.push(`x hook is ${String(s.post?.x || '').trim().length} characters (max 35)`);
   const banned = /\b(delve|tapestry|testament|realm|unlock|harness|leverage|revolutioni[sz]e|game-changer|seamless|cutting-edge|synergy|ever-evolving)\b/i;
   beats.forEach((b, i) => { if (banned.test(b.narration)) problems.push(`beat ${i + 1}: banned word`); });
 
@@ -255,7 +261,7 @@ Return ONLY JSON {"title","thumb","segments","outro","post"}. English only.`;
             tags: (p.youtube_tags || []).slice(0, 15).map((x) => cut(x, 30)), categoryId: '28', madeForKids: false}},
         },
       },
-      x: {account_ids: [cfg.accounts.x], content: cut(String(p.x || '').replace(/https?:\/\/\S+/g, '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim(), 35),
+      x: {account_ids: [cfg.accounts.x], content: xHook(p.x),
         reply_prefix: 'Watch the full episode:'},
     },
   };

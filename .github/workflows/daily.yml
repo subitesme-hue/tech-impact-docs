@@ -1,11 +1,11 @@
-name: Daily episode (21:00 Dubai, posts 23:30)
+name: Daily episode (starts 19:00 Dubai, posts 23:30)
 
 # Replaces the n8n schedule: picks today's region / sector / look / format / voice from history.json and starts
 # render.yml with posting on. A workflow_dispatch sent with the built-in GITHUB_TOKEN does start the other workflow
 # (GitHub's documented exception for workflow_dispatch), so no personal access token is needed.
 on:
   schedule:
-    - cron: '0 17 * * *'   # 17:00 UTC = 21:00 Dubai
+    - cron: '0 15 * * *'   # 15:00 UTC = 19:00 Dubai. GitHub starts scheduled runs late (3-3.5 h seen in Oct 2026), so we start early; the render then waits until 23:30 Dubai to post
   workflow_dispatch:
     inputs:
       post:
