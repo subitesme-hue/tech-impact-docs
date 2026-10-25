@@ -1,0 +1,52 @@
+name: Voice engine check (diagnostic)
+
+on:
+  workflow_dispatch:
+    inputs:
+      kokoro:
+        description: 'pip spec for kokoro'
+        required: false
+        default: 'kokoro>=0.9.4'
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install like render.yml
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq espeak-ng
+          pip install -q soundfile numpy
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q "${{ inputs.kokoro }}"
+      - name: Init KPipeline and speak one line (full traceback)
+        run: |
+          {
+            echo '== versions'; pip freeze | grep -iE '^(kokoro|misaki|torch|numpy|spacy|thinc|transformers|huggingface|phonemizer|espeakng|num2words|blis|loguru)' || true
+            echo; echo '== run'
+            python - <<'PY' 2>&1
+          import traceback
+          try:
+              from kokoro import KPipeline
+              p = KPipeline(lang_code='a')
+              n = 0
+              for r in p('Seven days of warning. In 2026, 6.1 billion dollars.', voice='am_michael', speed=1.1, split_pattern=None):
+                  n += len(r.tokens or [])
+                  print('tokens', [(t.text, t.start_ts) for t in (r.tokens or [])][:12])
+              print('OK tokens', n)
+          except Exception:
+              traceback.print_exc()
+          PY
+          } > /tmp/voice.md 2>&1
+          tail -c 60000 /tmp/voice.md
+      - name: Publish result
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete diag-voice -y --cleanup-tag -R ${{ github.repository }} 2>/dev/null || true
+          gh release create diag-voice --prerelease --title "DIAG voice" --notes-file /tmp/voice.md -R ${{ github.repository }}
