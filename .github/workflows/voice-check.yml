@@ -1,12 +1,9 @@
 name: Voice engine check (diagnostic)
 
+# Manual check that the word-timing voice still works, and the exact package set it works with
+# (used to refresh requirements/render.lock). Never runs on a schedule.
 on:
   workflow_dispatch:
-    inputs:
-      kokoro:
-        description: 'pip spec for kokoro'
-        required: false
-        default: 'kokoro>=0.9.4'
 
 permissions:
   contents: write
@@ -14,50 +11,43 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        extra:
-          - 'pip install -q --force-reinstall --no-deps "preshed==3.0.9"'
-          - 'pip install -q --force-reinstall --no-deps "cymem==2.0.10" "preshed==3.0.9" "murmurhash==1.0.12"'
-          - 'pip install -q "spacy==3.8.2" "thinc==8.3.4" "blis==1.0.1" "preshed==3.0.9" "cymem==2.0.10" "murmurhash==1.0.12" "numpy<2.3"'
-          - 'pip install -q --force-reinstall --no-deps "srsly==2.4.8"'
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install like render.yml
+      - name: Install exactly like render.yml
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq espeak-ng
-          pip install -q soundfile numpy
-          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -q "${{ inputs.kokoro }}"
-          bash -c "${{ matrix.extra }}" || echo "extra step failed"
-          python -c "import numpy, spacy; print('numpy', numpy.__version__, 'spacy', spacy.__version__)"
-      - name: Init KPipeline and speak one line (full traceback)
+          if [ -s requirements/render.lock ]; then
+            pip install -q -r requirements/render.lock --extra-index-url https://download.pytorch.org/whl/cpu
+          else
+            pip install -q kokoro-onnx soundfile scipy numpy pillow
+            pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+            pip install -q "kokoro>=0.9.4"
+            pip install -q --force-reinstall --no-deps "preshed==3.0.9"
+          fi
+      - name: Speak one line with word timings
         run: |
           {
-            echo '== extra: ${{ matrix.extra }}'; echo '== versions'; pip freeze | grep -iE '^(preshed|cymem|murmurhash|srsly|en.core|kokoro|misaki|torch|numpy|spacy|thinc|transformers|huggingface|phonemizer|espeakng|num2words|blis|loguru)' || true
-            echo; echo '== run'
             python - <<'PY' 2>&1
           import traceback
           try:
               from kokoro import KPipeline
-              p = KPipeline(lang_code='a')
+              p = KPipeline(lang_code='a', repo_id='hexgrad/Kokoro-82M')
               n = 0
               for r in p('Seven days of warning. In 2026, 6.1 billion dollars.', voice='am_michael', speed=1.1, split_pattern=None):
-                  n += len(r.tokens or [])
-                  print('tokens', [(t.text, t.start_ts) for t in (r.tokens or [])][:12])
-              print('OK tokens', n)
+                  n += sum(1 for t in (r.tokens or []) if t.start_ts is not None)
+              print('VOICE OK, timed tokens:', n)
           except Exception:
               traceback.print_exc()
           PY
+            echo; echo '== pip freeze'; pip freeze
           } > /tmp/voice.md 2>&1
-          tail -c 60000 /tmp/voice.md
+          cat /tmp/voice.md | head -5
       - name: Publish result
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          T="diag-voice-${{ strategy.job-index }}"
-          gh release delete "$T" -y --cleanup-tag -R ${{ github.repository }} 2>/dev/null || true
-          gh release create "$T" --prerelease --title "DIAG voice ${{ matrix.extra }}" --notes-file /tmp/voice.md -R ${{ github.repository }}
+          gh release delete diag-voice -y --cleanup-tag 2>/dev/null || true
+          gh release create diag-voice --prerelease --title "DIAG voice" --notes-file /tmp/voice.md
