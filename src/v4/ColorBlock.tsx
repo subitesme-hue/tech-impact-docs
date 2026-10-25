@@ -3,7 +3,7 @@
 // object (the "dot") travels through every cut and BECOMES the data (a number's circle, a chart's marker, a map pin, the
 // mask that reveals footage), giant tight sans type, spring physics with overshoot, hard colour cuts, no frames/rails/cards.
 import React from 'react';
-import {AbsoluteFill, Img, OffthreadVideo, Sequence, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Img, OffthreadVideo, Sequence, interpolate, spring, staticFile, Easing, useCurrentFrame, useVideoConfig} from 'remotion';
 import * as Lucide from 'lucide-react';
 import type {DocProps, Shot, TimelineItem} from '../types';
 import {MONO, SANS} from '../theme';
@@ -450,12 +450,18 @@ const ShotFrame: React.FC<{s: Shot; variant: string; make: (lf: number) => Ctx}>
   const f = useCurrentFrame();
   const c = make(f);
   const k = kindOf(s);
-  if (variant !== 'dot' && VARIANTS[k] && VARIANTS[k][variant]) return <>{VARIANTS[k][variant](s, {f: c.f, dur: c.dur, fps: c.fps, pal: c.pal})}</>;
+  // a slow camera move on every graphic shot, so a long narration line never sits on a frozen frame
+  // (direction changes shot to shot: push in, drift left, drift right, pull back)
+  const t = interpolate(f, [0, Math.max(1, c.dur)], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.inOut(Easing.sin)});
+  const mv = ['in', 'left', 'right', 'out'][c.idx % 4];
+  const cam: React.CSSProperties = k === 'footage' || k === 'agenda' ? {} : {transform:
+    mv === 'in' ? `scale(${1 + 0.07 * t})` : mv === 'out' ? `scale(${1.07 - 0.07 * t})` : `scale(1.04) translateX(${(mv === 'left' ? -1 : 1) * (40 * t - 20)}px)`};
+  if (variant !== 'dot' && VARIANTS[k] && VARIANTS[k][variant]) return <AbsoluteFill style={cam}>{VARIANTS[k][variant](s, {f: c.f, dur: c.dur, fps: c.fps, pal: c.pal})}</AbsoluteFill>;
   const b = K[k].ball(s, c);
-  return <>
+  return <AbsoluteFill style={cam}>
     {k !== 'agenda' && b.r > 0.5 ? <div style={{position: 'absolute', left: b.x - b.r, top: b.y - b.r, width: b.r * 2, height: b.r * 2, borderRadius: '50%', background: c.pal.dot}} /> : null}
     {K[k].render(s, c)}
-  </>;
+  </AbsoluteFill>;
 };
 
 const Thumb: React.FC<{p: DocProps; pal: Pal}> = ({p, pal}) => {

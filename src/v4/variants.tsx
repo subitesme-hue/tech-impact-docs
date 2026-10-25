@@ -210,11 +210,12 @@ const tiles: R = (s, c) => {
 const list: R = (s, c) => {
   const its = (s.items || []).slice(0, 4);
   const per = Math.max(5, (c.dur - 10) / its.length);
+  const y0 = 600 - its.length * 105; // block sits in the middle of the frame, not hanging from the top
   return <>
-    {s.title ? <div style={{position: 'absolute', left: 140, top: 130, ...SMALL, fontSize: 28, color: c.pal.ink}}>{s.title}</div> : null}
+    {s.title ? <div style={{position: 'absolute', left: 140, top: y0 - 90, ...SMALL, fontSize: 28, color: c.pal.ink}}>{s.title}</div> : null}
     {its.map((it: any, i: number) => {
       const a = easeOut(c.f, 3 + i * per, 13 + i * per);
-      return <div key={i} style={{position: 'absolute', left: 140, top: 230 + i * 190, display: 'flex', alignItems: 'center', gap: 40, opacity: a, transform: `translateX(${(1 - a) * -120}px)`}}>
+      return <div key={i} style={{position: 'absolute', left: 140, top: y0 + i * 210, display: 'flex', alignItems: 'center', gap: 40, opacity: a, transform: `translateX(${(1 - a) * -120}px)`}}>
         <Ico name={it.icon} size={96} color={c.pal.ink} />
         <div style={{...BIG, fontSize: 104, color: c.pal.ink, borderBottom: `8px solid ${c.pal.dot}`, paddingBottom: 6}}>{it.label}</div>
       </div>;
