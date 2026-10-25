@@ -7,6 +7,7 @@ import {AbsoluteFill, Img, OffthreadVideo, Sequence, interpolate, spring, static
 import * as Lucide from 'lucide-react';
 import type {DocProps, Shot, TimelineItem} from '../types';
 import {MONO, SANS} from '../theme';
+import {VARIANTS} from './variants';
 
 type Pal = {bg: string; ink: string; dot: string; soft: string};
 // palettes cycle per shot; each episode picks a rotation (props.look) so two Color Block episodes still differ
@@ -323,9 +324,9 @@ const K: Record<string, Kind> = {
     render: (s, c) => {
       const n = c.sections.length;
       const ms = c.marks && c.marks.length === n ? c.marks : c.sections.map((_, i) => Math.round(12 + ((c.dur - 12) * i) / n));
-      let k = -1;
+      let k = ms[0] < 30 ? 0 : -1; // no 0.3 s flash of a title card before card 01
       for (let i = 0; i < n; i++) if (c.f >= ms[i]) k = i;
-      const lf = k < 0 ? c.f : c.f - ms[k];
+      const lf = k < 0 ? c.f : Math.max(0, c.f - ms[k]) + (k === 0 && ms[0] < 30 ? 0 : 0);
       const pal = k < 0 ? c.pal : SET_OF(c)[(c.idx + k + 1) % 4];
       const cc = {...c, f: lf, pal};
       return <AbsoluteFill style={{background: pal.bg}}>
@@ -343,57 +344,118 @@ const SET_OF = (c: Ctx) => SETS[((c.p.look || 0) % SETS.length + SETS.length) % 
 
 const kindOf = (s: Shot) => (K[s.kind] ? s.kind : 'kinetic');
 
+// Which animation each shot uses. Rule (user, 26 Oct): never the same animation twice for different ideas in one film,
+// and the travelling dot only as an accent (a handful of shots, never two in a row).
+const DOT_KINDS = ['kinetic', 'counter', 'compare', 'chart', 'flow', 'steps', 'units', 'globe', 'route', 'network', 'icons', 'timeline', 'device', 'footage', 'agenda'];
+const SHARE: Record<string, number> = {};
+for (const k of Object.keys(VARIANTS)) for (const v of Object.keys(VARIANTS[k])) { const key = `fn:${(VARIANTS[k][v] as any).name || v}`; SHARE[key] = (SHARE[key] || 0) + 1; }
+export const assignVariants = (shots: Shot[], seed: number) => {
+  const used: Record<string, number> = {};
+  let dots = 0, lastDot = -5;
+  return shots.map((s, i) => {
+    const k = kindOf(s);
+    const alts = Object.keys(VARIANTS[k] || {});
+    const all = ['dot', ...alts];
+    // rotate the starting point per episode so two films order their variants differently
+    const order = all.map((_, j) => all[(j + seed) % all.length]);
+    const canDot = DOT_KINDS.includes(k) && dots < 5 && i - lastDot > 2 && !(k === 'footage' && !(s as any).media);
+    const keyOf = (v: string) => (v === 'dot' ? `dot:${k}` : `fn:${(VARIANTS[k][v] as any).name || v}`);
+    // animations shared by several kinds (cards, chevrons, checklist...) are kept back for the kinds that run out
+    const shared = (v: string) => (v === 'dot' ? 50 : SHARE[keyOf(v)] || 1); // the dot is an accent: only when it is the freshest option
+    const score = (v: string) => (used[keyOf(v)] || 0) * 100 + shared(v);
+    let best = '', bestN = 1e9;
+    for (const v of order) {
+      if (v === 'dot' && !canDot && alts.length) continue;
+      if (score(v) < bestN) { best = v; bestN = score(v); }
+    }
+    // never repeat an animation: if every alternative is spent, this kind's own dot move is still new, so use it
+    if (best !== 'dot' && (used[keyOf(best)] || 0) > 0 && DOT_KINDS.includes(k) && !used[`dot:${k}`]) best = 'dot';
+    if (k === 'agenda') best = 'dot';
+    used[keyOf(best)] = (used[keyOf(best)] || 0) + 1;
+    if (best === 'dot' && k !== 'agenda') { dots++; lastDot = i; }
+    return best;
+  });
+};
+
+// Transitions between shots (overlap of T frames). They rotate so the edit never settles into one rhythm.
+const T = 10;
+const TRANS = ['push', 'wipe', 'zoom', 'push-up', 'iris', 'wipe'];
+const enterStyle = (type: string, f: number, fps: number): React.CSSProperties => {
+  const t = spring({frame: f, fps, config: {damping: 18, stiffness: 160}});
+  switch (type) {
+    case 'push': return {transform: `translateX(${(1 - t) * 100}%)`};
+    case 'push-up': return {transform: `translateY(${(1 - t) * 100}%)`};
+    case 'wipe': return {clipPath: `inset(0 0 0 ${(1 - t) * 100}%)`};
+    case 'zoom': return {transform: `scale(${1.25 - 0.25 * t})`, opacity: Math.min(1, t * 1.4)};
+    case 'iris': return {clipPath: `circle(${t * 1200}px at 960px 540px)`};
+    default: return {};
+  }
+};
+const exitStyle = (type: string, f: number, fps: number): React.CSSProperties => {
+  // f = frames past the shot's end (0..T)
+  const t = spring({frame: f, fps, config: {damping: 18, stiffness: 160}});
+  switch (type) {
+    case 'push': return {transform: `translateX(${-t * 35}%)`, filter: `brightness(${1 - 0.3 * t})`};
+    case 'push-up': return {transform: `translateY(${-t * 35}%)`};
+    case 'zoom': return {transform: `scale(${1 - 0.08 * t})`};
+    default: return {};
+  }
+};
+
 export const ColorBlockDoc: React.FC<DocProps> = (p) => {
   const f = useCurrentFrame();
   const {fps} = useVideoConfig();
   const tl = p.timeline;
   if (!tl) return <AbsoluteFill style={{background: '#ECE8DF'}} />;
-  const set = SETS[((p.look || 0) % SETS.length + SETS.length) % SETS.length];
+  const seed = ((p.look || 0) % SETS.length + SETS.length) % SETS.length;
+  const set = SETS[seed];
   const sections = p.segments.filter((s) => s.kind === 'chapter').map((s) => s.title);
   const items = tl.items;
   const shotOf = (it: TimelineItem) => p.segments[it.seg!].beats[it.beat!].shots[it.shot!];
+  const shotItems = items.filter((it) => it.kind === 'shot');
+  const vars = React.useMemo(() => assignVariants(shotItems.map(shotOf), seed), [p]);
+  const varOf = (it: TimelineItem) => vars[shotItems.indexOf(it)];
   const ctxOf = (it: TimelineItem, i: number, lf: number): Ctx => ({f: lf, dur: it.dur, fps, pal: set[i % set.length], p, sections, marks: it.marks, idx: i});
-  const ballOf = (it: TimelineItem, i: number, lf: number): Ball | null => {
-    if (it.kind !== 'shot') return it.kind === 'thumb' ? {x: 1650, y: 820, r: 60} : {x: 960, y: 640, r: 26};
-    const s = shotOf(it);
-    return K[kindOf(s)].ball(s, ctxOf(it, i, lf));
-  };
-  const ci = items.findIndex((it) => f >= it.start && f < it.start + it.dur);
-  const cur = items[Math.max(0, ci)];
-  const lf = f - cur.start;
-  let ball = ballOf(cur, ci, lf);
-  if (ci > 0 && ball) { // the dot glides from where it was to where it needs to be: one continuous object across cuts
-    const prev = items[ci - 1];
-    const pb = ballOf(prev, ci - 1, prev.dur - 1);
-    const t = spring({frame: lf, fps, config: {damping: 14, stiffness: 140}});
-    if (pb) ball = {x: pb.x + (ball.x - pb.x) * t, y: pb.y + (ball.y - pb.y) * t, r: pb.r + (ball.r - pb.r) * t};
-  }
-  const pal = cur.kind === 'shot' ? set[ci % set.length] : set[0];
-  const showBall = ball && ball.r > 0.5 && cur.kind !== 'thumb';
-  const ballEl = showBall ? <div style={{position: 'absolute', left: ball!.x - ball!.r, top: ball!.y - ball!.r, width: ball!.r * 2, height: ball!.r * 2, borderRadius: '50%',
-    background: pal.dot, pointerEvents: 'none'}} /> : null;
+  const ci = Math.max(0, items.findIndex((it) => f >= it.start && f < it.start + it.dur));
+  const cur = items[ci];
+  const pal = cur.kind === 'shot' ? set[ci % set.length] : cur.kind === 'outro' ? set[3] : set[1];
   return (
-    // the colour field is the root; the travelling dot sits ON the field but UNDER each scene's text, so numbers read on top of it
-    <AbsoluteFill style={{background: cur.kind === 'thumb' ? set[1].bg : cur.kind === 'outro' ? set[3].bg : pal.bg, overflow: 'hidden'}}>
-      {ballEl}
+    <AbsoluteFill style={{background: pal.bg, overflow: 'hidden'}}>
       {items.map((it, i) => {
-        let body: React.ReactNode = null;
+        const P = it.kind === 'shot' ? set[i % set.length] : it.kind === 'outro' ? set[3] : set[1];
+        const next = items[i + 1];
+        const trIn = TRANS[(i + seed) % TRANS.length];
+        const trOut = next ? TRANS[(i + 1 + seed) % TRANS.length] : '';
+        let body: React.ReactNode;
         if (it.kind === 'thumb') body = <Thumb p={p} pal={set[1]} />;
         else if (it.kind === 'outro') body = <Outro p={p} pal={set[3]} />;
-        else {
-          const s = shotOf(it);
-          body = <ShotFrame it={it} i={i} s={s} make={(lf2) => ctxOf(it, i, lf2)} />;
-        }
-        return <Sequence key={i} from={it.start} durationInFrames={it.dur}>{body}</Sequence>;
+        else body = <ShotFrame s={shotOf(it)} variant={varOf(it)} make={(lf2) => ctxOf(it, i, lf2)} />;
+        return <Sequence key={i} from={it.start} durationInFrames={it.dur + (next ? T : 0)}>
+          <Wrap enter={i === 0 ? '' : trIn} exit={trOut} dur={it.dur} bg={P.bg}>{body}</Wrap>
+        </Sequence>;
       })}
       <div style={{position: 'absolute', right: 120, top: 110, ...SMALL, color: pal.ink, opacity: cur.kind === 'shot' ? 0.6 : 0}}>T&I · {cur.seg !== undefined && p.segments[cur.seg].kind === 'chapter' ? String(sections.indexOf(p.segments[cur.seg].title) + 1).padStart(2, '0') : '00'}</div>
     </AbsoluteFill>
   );
 };
 
-const ShotFrame: React.FC<{it: TimelineItem; i: number; s: Shot; make: (lf: number) => Ctx}> = ({s, make}) => {
+const Wrap: React.FC<{enter: string; exit: string; dur: number; bg: string; children: React.ReactNode}> = ({enter, exit, dur, bg, children}) => {
   const f = useCurrentFrame();
-  return <>{K[kindOf(s)].render(s, make(f))}</>;
+  const {fps} = useVideoConfig();
+  const st = f >= dur ? exitStyle(exit, f - dur, fps) : enter ? enterStyle(enter, f, fps) : {};
+  return <AbsoluteFill style={{background: bg, overflow: 'hidden', ...st}}>{children}</AbsoluteFill>;
+};
+
+const ShotFrame: React.FC<{s: Shot; variant: string; make: (lf: number) => Ctx}> = ({s, variant, make}) => {
+  const f = useCurrentFrame();
+  const c = make(f);
+  const k = kindOf(s);
+  if (variant !== 'dot' && VARIANTS[k] && VARIANTS[k][variant]) return <>{VARIANTS[k][variant](s, {f: c.f, dur: c.dur, fps: c.fps, pal: c.pal})}</>;
+  const b = K[k].ball(s, c);
+  return <>
+    {k !== 'agenda' && b.r > 0.5 ? <div style={{position: 'absolute', left: b.x - b.r, top: b.y - b.r, width: b.r * 2, height: b.r * 2, borderRadius: '50%', background: c.pal.dot}} /> : null}
+    {K[k].render(s, c)}
+  </>;
 };
 
 const Thumb: React.FC<{p: DocProps; pal: Pal}> = ({p, pal}) => {

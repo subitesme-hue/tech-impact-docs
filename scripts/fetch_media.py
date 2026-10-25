@@ -203,7 +203,11 @@ def fix_label(sh):
         return  # label's place is named by the clip itself
     named = [w for w in RTERMS if f' {w} ' in about and w not in GENERIC]
     old = sh['label']
-    sh['label'] = max(named, key=len).title() if named else ''
+    if named:  # keep the city's first word: 'san francisco', not 'francisco'
+        top = max(named, key=len)
+        mm = re.search(r' (san|santa|los|las|new|abu|el|al|saint|st|rio|sao|hong|kuala|cape|port|buenos|tel|ho) ' + re.escape(top) + ' ', about)
+        named = [(mm.group(1) + ' ' + top) if mm else top]
+    sh['label'] = ' '.join(w.upper() if w.lower() in ('usa', 'us', 'uk', 'uae', 'eu', 'drc', 'ksa') else w.capitalize() for w in max(named, key=len).split()) if named else ''  # USA / UAE / UK stay upper-case
     print(f'  label "{old}" -> "{sh["label"]}" (clip is not from there)')
 
 def vision_pick(cands, narration, query):
