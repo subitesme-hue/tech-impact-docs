@@ -21,7 +21,7 @@ const FORMATS = ['explainer', 'one-story', 'follow-the-money', 'then-now-next', 
 
 const rows = fs.existsSync('history.json') ? JSON.parse(fs.readFileSync('history.json', 'utf8')) : [];
 const DAY = 86400000, DUBAI = 4 * 3600000;
-const now = Date.now();
+const now = process.env.PICK_DATE ? Date.parse(process.env.PICK_DATE + 'T15:00:00Z') : Date.now(); // PICK_DATE: plan a given evening early
 const day = Math.floor((now + DUBAI) / DAY);
 // a scheduled run that GitHub starts very late (after midnight Dubai) still belongs to the previous evening's slot
 const dubaiHour = new Date(now + DUBAI).getUTCHours();

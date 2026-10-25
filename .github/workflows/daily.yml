@@ -12,6 +12,10 @@ on:
         description: 'Post when rendered? (true/false). Manual runs default to false = test.'
         required: false
         default: 'false'
+      date:
+        description: 'Plan the episode for this evening (YYYY-MM-DD). Blank = today. A test render made ahead is posted by that evening''s scheduled run.'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -28,6 +32,7 @@ jobs:
       - name: Pick today's topic
         env:
           SCHEDULED: ${{ github.event_name == 'schedule' && 'true' || 'false' }}
+          PICK_DATE: ${{ inputs.date }}
         run: node scripts/pick_topic.mjs
       - name: Start the render
         env:
