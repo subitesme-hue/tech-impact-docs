@@ -14,9 +14,10 @@ const CFG = {
     'Climate and environment', 'Telecommunications', 'Food security', 'Insurance', 'Jobs and skills', 'Disaster response',
     'Accessibility', 'Mining and resources', 'Media and culture'],
   skip_dates: ['2026-10-20', '2026-10-25'], // 25 Oct: 'Solar After Sunset' posted by hand
+  look_override: {},
 };
 const LOOK_ORDER = [9, 5, 10, 7, 8, 1, 9, 4, 10, 6, 8, 3]; // 0-3 night, 4-5 editorial, 6-7 blueprint, 8-10 Color Block engine (src/theme.ts)
-const FAMILY = (l) => (l <= 3 ? 'night' : l <= 5 ? 'editorial' : l <= 7 ? 'blueprint' : 'block');
+const FAMILY = (l) => (l <= 3 ? 'night' : l <= 5 ? 'editorial' : l <= 7 ? 'blueprint' : l <= 10 ? 'block' : 'desk');
 const FORMATS = ['explainer', 'one-story', 'follow-the-money', 'then-now-next', 'myth-vs-reality'];
 
 const rows = fs.existsSync('history.json') ? JSON.parse(fs.readFileSync('history.json', 'utf8')) : [];
@@ -55,9 +56,15 @@ const choices = ranked.filter((s) => !recent.includes(s));
 const sector = (choices.length ? choices : ranked)[0];
 const alternates = (choices.length ? choices : ranked).slice(1, 4);
 
-const usedFamilies = lastDay.map((r) => FAMILY(Number(r.look)));
-let look = LOOK_ORDER[day % LOOK_ORDER.length];
-for (let k = 1; k < LOOK_ORDER.length && usedFamilies.includes(FAMILY(look)); k++) look = LOOK_ORDER[(day + k) % LOOK_ORDER.length];
+// Engine rotation (user, 26 Oct: every film must look and move differently from the previous ones, not a recolour).
+// Pick the ENGINE used least recently (never-used engines first), then the least recently used look inside it.
+// night / editorial / blueprint share one engine ('classic'), so they count as one.
+const ENGINE = (l) => (l <= 7 ? 'classic' : FAMILY(l));
+const ENGINE_LOOKS = {classic: [1, 4, 6, 0, 5, 7, 2, 3], block: [9, 10, 8], desk: [11, 12]};
+const lastOf = (pred) => rows.filter((r) => pred(Number(r.look))).map((r) => r.date).sort().pop() || '';
+const engine = Object.keys(ENGINE_LOOKS).sort((a, b) => lastOf((l) => ENGINE(l) === a).localeCompare(lastOf((l) => ENGINE(l) === b)))[0];
+let look = ENGINE_LOOKS[engine].slice().sort((a, b) => lastOf((l) => (engine === 'classic' ? FAMILY(l) === FAMILY(a) : l === a)).localeCompare(lastOf((l) => (engine === 'classic' ? FAMILY(l) === FAMILY(b) : l === b))))[0];
+if (CFG.look_override[date] !== undefined) look = CFG.look_override[date];
 let format = FORMATS[day % FORMATS.length];
 for (let k = 1; k < FORMATS.length && lastDay.some((r) => r.format === format); k++) format = FORMATS[(day + k) % FORMATS.length];
 let voice = CFG.voices[day % CFG.voices.length];

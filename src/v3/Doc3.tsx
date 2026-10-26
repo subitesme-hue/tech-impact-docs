@@ -9,6 +9,7 @@ import {Globe, Route} from './maps';
 import {Chart, Compare, Counter, Flow, FootageShot, Icons, Kinetic, Network, Steps, Timeline, Units} from './diagrams';
 import {AgendaReel, Contents, Gauge, Headline, PaperMap, SectionWipe, Typed, WireGlobe} from './families';
 import {ColorBlockDoc} from '../v4/ColorBlock';
+import {LiveDeskDoc} from '../v5/LiveDesk';
 import {BackdropCtx, Duotone, Label, LookCtx, SectionBackdrop, Stage, ease} from './kit';
 
 // No regional footage found: the section's regional photo in duotone with the place callout (never a clip from the wrong country).
@@ -147,6 +148,7 @@ const Outro3: React.FC<{p: DocProps; look: Look; dur: number}> = ({p, look, dur}
 export const Doc3: React.FC<DocProps> = (p) => {
   const look = lookOf(p.look);
   if (look.family === 'block') return <ColorBlockDoc {...p} look={p.look - 8} />;
+  if (look.family === 'desk') return <LiveDeskDoc {...p} look={p.look - 11} />;
   const tl = p.timeline;
   const f = useCurrentFrame();
   if (!tl) return <AbsoluteFill style={{background: look.bg}} />;

@@ -1,11 +1,13 @@
 name: Daily episode (starts 19:00 Dubai, posts 23:30)
+run-name: ${{ (github.event_name == 'schedule' || inputs.scheduled == 'true') && 'Evening run' || 'Manual daily run' }}
 
 # Replaces the n8n schedule: picks today's region / sector / look / format / voice from history.json and starts
 # render.yml with posting on. A workflow_dispatch sent with the built-in GITHUB_TOKEN does start the other workflow
 # (GitHub's documented exception for workflow_dispatch), so no personal access token is needed.
 on:
   schedule:
-    - cron: '0 15 * * *'   # 15:00 UTC = 19:00 Dubai. GitHub starts scheduled runs late (3-3.5 h seen in Oct 2026), so we start early; the render then waits until 23:30 Dubai to post
+    - cron: '0 15 * * *'   # BACKUP only. GitHub started these 4-5 h late or skipped them (Oct 2026); the main trigger is an outside
+                           # scheduled task that dispatches this workflow with scheduled=true at 15:00 and 17:00 UTC. Duplicates skip themselves.
   workflow_dispatch:
     inputs:
       post:
@@ -16,10 +18,18 @@ on:
         description: 'Plan the episode for this evening (YYYY-MM-DD). Blank = today. A test render made ahead is posted by that evening''s scheduled run.'
         required: false
         default: ''
+      scheduled:
+        description: 'true = this is the evening run (sent by the outside scheduler because GitHub cron starts 4-5 h late or not at all)'
+        required: false
+        default: 'false'
 
 permissions:
   contents: read
   actions: write
+
+concurrency:
+  group: daily-episode
+  cancel-in-progress: false
 
 jobs:
   start:
@@ -29,15 +39,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Pick today's topic
+      - name: Skip if tonight's evening run already happened
+        if: ${{ github.event_name == 'schedule' || inputs.scheduled == 'true' }}
         env:
-          SCHEDULED: ${{ github.event_name == 'schedule' && 'true' || 'false' }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # the evening run can arrive twice (outside scheduler at 15:00 and 17:00 UTC + GitHub cron backup); only the first one acts
+          today=$(date -u +%Y-%m-%d)
+          n=$(gh api "repos/${{ github.repository }}/actions/workflows/daily.yml/runs?created=>=${today}T00:00:00Z&per_page=50" \
+            --jq '[.workflow_runs[] | select(.id != ${{ github.run_id }} and .display_title == "Evening run" and .conclusion == "success")] | length')
+          echo "earlier successful evening runs today: $n"
+          if [ "$n" != "0" ]; then echo "SKIP=1" >> "$GITHUB_ENV"; fi
+      - name: Pick today's topic
+        if: ${{ env.SKIP != '1' }}
+        env:
+          SCHEDULED: ${{ (github.event_name == 'schedule' || inputs.scheduled == 'true') && 'true' || 'false' }}
           PICK_DATE: ${{ inputs.date }}
         run: node scripts/pick_topic.mjs
       - name: Start the render
+        if: ${{ env.SKIP != '1' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          POST: ${{ github.event_name == 'schedule' && 'true' || inputs.post }}
+          POST: ${{ (github.event_name == 'schedule' || inputs.scheduled == 'true') && 'true' || inputs.post }}
         run: |
           if [ -s reuse.json ]; then
             gh workflow run post.yml --ref main -f tag="$(node -p "require('./reuse.json').tag")" -f post_at="$(node -p "require('./reuse.json').post_at")"

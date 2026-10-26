@@ -22,7 +22,7 @@ export const MONO = "'JetBrains Mono', monospace";
 // n8n rotates so consecutive episodes never share a family.
 export type Look = {
   name: string;
-  family: 'night' | 'editorial' | 'blueprint' | 'block';
+  family: 'night' | 'editorial' | 'blueprint' | 'block' | 'desk';
   mode: 'dark' | 'light';
   stage: 'night' | 'paper' | 'blueprint';
   node: 'ring' | 'solid' | 'box';
@@ -70,6 +70,9 @@ export const LOOKS: Look[] = [
   // block: a different ENGINE (src/v4/ColorBlock.tsx) — flat colour fields + one travelling dot; these values are only fallbacks
   ...[0, 1, 2].map((k): Look => ({name: `block-${k}`, family: 'block', mode: 'light', stage: 'paper', node: 'solid', bg: '#ECE8DF', panel: '#ECE8DF', ink: '#121212',
     dim: '#555', fg: '18,18,18', accent: '#FF4A1C', accent2: '#1D3BFF', onAccent: '#fff', grade: 'none', grain: 0, transitions: [], headlineFont: SANS, labelFont: MONO, upper: false})),
+  // desk: LIVE DESK engine (src/v5/LiveDesk.tsx) — newsroom map wall; looks 11-12 pick its two palettes. Fallback values only.
+  ...[0, 1].map((k): Look => ({name: `desk-${k}`, family: 'desk', mode: 'dark', stage: 'night', node: 'solid', bg: '#07101F', panel: '#122036', ink: '#F3F6FB',
+    dim: '#8EA2BF', fg: '255,255,255', accent: '#E8322D', accent2: '#FFB31F', onAccent: '#fff', grade: 'none', grain: 0, transitions: [], headlineFont: SANS, labelFont: MONO, upper: true})),
 ];
 
 export const lookOf = (i: number) => LOOKS[((i % LOOKS.length) + LOOKS.length) % LOOKS.length];
