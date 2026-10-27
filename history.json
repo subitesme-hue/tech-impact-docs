@@ -40,5 +40,16 @@
   "tag": "doc-2026-10-26-united-states-colorblock-v3",
   "title": "Who Earns From Robotaxis",
   "post": "true"
+ },
+ {
+  "date": "2026-10-27",
+  "region": "Europe",
+  "sector": "Education",
+  "look": 11,
+  "format": "then-now-next",
+  "voice": "af_heart",
+  "tag": "doc-2026-10-27-europe-education",
+  "title": "AI Tutors Reach Europe's Classrooms",
+  "post": "true"
  }
 ]
