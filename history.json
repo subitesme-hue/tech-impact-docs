@@ -51,5 +51,16 @@
   "tag": "doc-2026-10-27-europe-education",
   "title": "AI Tutors Reach Europe's Classrooms",
   "post": "true"
+ },
+ {
+  "date": "2026-10-28",
+  "region": "Middle East",
+  "sector": "Healthcare",
+  "look": 1,
+  "format": "explainer",
+  "voice": "af_bella",
+  "tag": "doc-2026-10-28-middle-east-healthcare",
+  "title": "AI Gives Doctors Time Back",
+  "post": "true"
  }
 ]
