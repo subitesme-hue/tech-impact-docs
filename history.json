@@ -62,5 +62,16 @@
   "tag": "doc-2026-10-28-middle-east-healthcare",
   "title": "AI Gives Doctors Time Back",
   "post": "true"
+ },
+ {
+  "date": "2026-10-29",
+  "region": "GCC",
+  "sector": "Manufacturing",
+  "look": 9,
+  "format": "one-story",
+  "voice": "am_fenrir",
+  "tag": "doc-2026-10-29-gcc-manufacturing",
+  "title": "Gulf Factories Meet Robots",
+  "post": "true"
  }
 ]
