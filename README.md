@@ -1,4 +1,4 @@
-# T&I Tech Impact — daily documentary
+# T&I Tech Impact — weekly documentary (Thursday, 23:00 Dubai)
 
 One documentary a day (up to 6 minutes) about technology and business applications with positive social impact,
 rotating across the United States, Europe, Africa, the Middle East, the GCC, South Asia, East Asia and Asia Pacific.
@@ -17,7 +17,7 @@ Style references: see `REFERENCES.md`.
       use numbers not in the research, invent quotes, or repeat visuals. Up to 3 sectors / 3 drafts.
    2. `scripts/render.py` — Kokoro voice + timeline → stock media → Remotion render → music/SFX mix → -14 LUFS.
    3. Release with `video.mp4`, `summary.mp4` (30 s, for X), `cover.jpg`, `props.json`, `research.json`.
-   4. `scripts/post.mjs` (only when posting is on) — waits for 23:30 Dubai, posts the full film to Facebook 7748,
+   4. `scripts/post.mjs` (only when posting is on) — waits for 23:00 Dubai (Thursday only), posts the full film to Facebook 7748,
       LinkedIn T&I News 9116 and YouTube 7751 (with chapters), then the 30 s summary to X 7747 with the YouTube link as a reply.
 
 ## Secrets (Settings → Secrets and variables → Actions)

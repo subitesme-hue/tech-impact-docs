@@ -1,10 +1,11 @@
-// Daily topic picker (replaces the n8n "Config" + "Pick Topic" nodes; runs inside .github/workflows/daily.yml).
+// Weekly topic picker: one episode every THURSDAY, published 23:00 Dubai (user, 30 Oct 2026; was daily 23:30) (replaces the n8n "Config" + "Pick Topic" nodes; runs inside .github/workflows/daily.yml).
 // Rotates region, least-recently-used sector, voice, visual family (night / editorial / blueprint — never the same family
 // as the previous episode day) and storytelling format. Reads history.json; writes topic.json.
 import fs from 'node:fs';
 
 const CFG = {
-  post_hour_dubai: 23, post_minute: 30,
+  post_hour_dubai: 23, post_minute: 0,
+  post_weekdays: [4], // 4 = Thursday (Dubai date). Scheduled runs on any other day do nothing.
   accounts: {facebook: 7748, linkedin: 9116, youtube: 7751, x: 7747},
   research_model: 'anthropic/claude-sonnet-5.5', script_model: 'anthropic/claude-sonnet-5.5',
   voices: ['am_michael', 'af_heart', 'bm_george', 'af_bella', 'am_fenrir', 'bf_emma', 'af_nicole', 'bm_fable'],
@@ -28,6 +29,12 @@ const day = Math.floor((now + DUBAI) / DAY);
 const dubaiHour = new Date(now + DUBAI).getUTCHours();
 const date = new Date(now + DUBAI - (process.env.SCHEDULED === 'true' && dubaiHour < 12 ? DAY : 0)).toISOString().slice(0, 10);
 fs.writeFileSync('reuse.json', '');
+const weekday = new Date(date + 'T12:00:00Z').getUTCDay();
+if (process.env.SCHEDULED === 'true' && !CFG.post_weekdays.includes(weekday)) {
+  console.log(`No episode on ${date}: episodes are weekly, on Thursday only.`);
+  fs.writeFileSync('topic.json', '');
+  process.exit(0);
+}
 if (CFG.skip_dates.includes(date) || rows.some((r) => r.date === date && r.post !== 'false')) {
   console.log(`No episode needed for ${date} (skip date or already made).`);
   fs.writeFileSync('topic.json', '');

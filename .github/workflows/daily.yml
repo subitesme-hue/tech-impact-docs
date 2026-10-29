@@ -1,4 +1,4 @@
-name: Daily episode (starts 19:00 Dubai, posts 23:30)
+name: Weekly episode (Thursday, posts 23:00 Dubai)
 run-name: ${{ (github.event_name == 'schedule' || inputs.scheduled == 'true') && 'Evening run' || 'Manual daily run' }}
 
 # Replaces the n8n schedule: picks today's region / sector / look / format / voice from history.json and starts
@@ -6,8 +6,11 @@ run-name: ${{ (github.event_name == 'schedule' || inputs.scheduled == 'true') &&
 # (GitHub's documented exception for workflow_dispatch), so no personal access token is needed.
 on:
   schedule:
-    - cron: '0 15 * * *'   # BACKUP only. GitHub started these 4-5 h late or skipped them (Oct 2026); the main trigger is an outside
-                           # scheduled task that dispatches this workflow with scheduled=true at 15:00 and 17:00 UTC. Duplicates skip themselves.
+    # Weekly: Thursday only (user, 30 Oct 2026). Render starts ~18:30 Dubai, post.mjs waits and publishes at 23:00 Dubai.
+    # Two slots because GitHub starts cron runs hours late or skips them; the second run skips itself if the first succeeded.
+    # The render job can wait at most ~5 h, so these must stay after ~13:50 UTC.
+    - cron: '30 14 * * 4'   # Thu 18:30 Dubai
+    - cron: '30 16 * * 4'   # Thu 20:30 Dubai (backup)
   workflow_dispatch:
     inputs:
       post:
