@@ -60,6 +60,25 @@ const pc = post.main.platform_content || {};
 for (const k of ['linkedin', 'facebook', 'youtube']) if (pc[k]?.content) pc[k].content = withCta(pc[k].content);
 post.main.content = withCta(post.main.content);
 
+// Follow lines with page links (3 Nov 2026). Facebook: no hashtags. LinkedIn + YouTube keep theirs.
+const FOLLOW = {
+  facebook: '👉 Follow T&I News on Facebook: https://www.facebook.com/taidotnews',
+  linkedin: '👉 Follow T&I News on LinkedIn: https://www.linkedin.com/company/t-i-news-l-l-c',
+  youtube: '▶️ Subscribe to T&I News on YouTube: https://www.youtube.com/channel/UCruBO9XLxwSEyPCAo9_SRBQ',
+};
+const stripTags = (t) => String(t || '').split('\n')
+  .map((l) => l.replace(/(^|\s)#[\p{L}\p{N}_]+/gu, '').replace(/\s+$/, ''))
+  .join('\n').replace(/\n{3,}/g, '\n\n').trim();
+const beforeTags = (t, line) => {
+  const lines = String(t || '').trim().split('\n');
+  const i = lines.findIndex((l) => /^\s*#[\p{L}\p{N}_]/u.test(l));
+  if (i === -1) return `${lines.join('\n')}\n\n${line}`;
+  return `${lines.slice(0, i).join('\n').trim()}\n\n${line}\n\n${lines.slice(i).join('\n').trim()}`;
+};
+if (pc.facebook?.content) pc.facebook.content = `${stripTags(pc.facebook.content)}\n\n${FOLLOW.facebook}`;
+if (pc.linkedin?.content) pc.linkedin.content = beforeTags(pc.linkedin.content, FOLLOW.linkedin);
+if (pc.youtube?.content) pc.youtube.content = beforeTags(pc.youtube.content, FOLLOW.youtube);
+
 const results = {};
 // ---- 1. full film
 const mainMedia = await upload('out/video.mp4', `${props.id}.mp4`); // upload first, so the post goes out right on time
@@ -105,7 +124,14 @@ if (post.x?.account_ids?.length && fs.existsSync('out/cover.jpg')) {
     const link = ytUrl || 'https://tai.news';
     // X showed the hook + image but dropped a link placed in the tweet text (seen on the 20 Oct post), so the link goes in
     // settings.firstComment: "Text posted as a reply to your tweet immediately after publishing" (posteverywhere.ai/docs/platforms/x-twitter).
-    const text = post.x.content; // hook, max 35 characters
+    // 3 Nov 2026 (user's choice): link + follow line in the post itself; the reply keeps the link as a backup
+    // in case X hides the in-post link again. Hook <= 35 + link (X counts 23) + follow line stays far under 280.
+    const XF = ['Want stories like this daily? Follow @Tai_news_uae',
+      'Follow @Tai_news_uae for UAE & GCC news before it trends.',
+      "Stay ahead of the Gulf's biggest business moves. Follow @Tai_news_uae",
+      'Follow @Tai_news_uae so you never miss a GCC deal, launch or market move.'];
+    const follow = XF[Math.floor(Date.now() / 86400000 / 7) % XF.length];
+    const text = `${post.x.content}\n\n${link}\n\n${follow}`;
     const reply = `Watch the full episode: ${link}`;
     results.x = await create({media_ids: [xMedia], account_ids: post.x.account_ids, content: text,
       platform_content: {x: {content: text, settings: {replySettings: 'everyone', firstComment: reply}}}});
