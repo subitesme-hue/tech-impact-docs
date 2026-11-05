@@ -73,5 +73,16 @@
   "tag": "doc-2026-10-29-gcc-manufacturing",
   "title": "Gulf Factories Meet Robots",
   "post": "true"
+ },
+ {
+  "date": "2026-11-05",
+  "region": "Middle East",
+  "sector": "Financial inclusion",
+  "look": 12,
+  "format": "then-now-next",
+  "voice": "af_bella",
+  "tag": "doc-2026-11-05-middle-east-financial-inclusion",
+  "title": "Instant Money, Middle East",
+  "post": "true"
  }
 ]
