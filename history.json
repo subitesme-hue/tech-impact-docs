@@ -84,5 +84,16 @@
   "tag": "doc-2026-11-05-middle-east-financial-inclusion",
   "title": "Instant Money, Middle East",
   "post": "true"
+ },
+ {
+  "date": "2026-11-12",
+  "region": "Africa",
+  "sector": "Water and sanitation",
+  "look": 6,
+  "format": "explainer",
+  "voice": "bm_george",
+  "tag": "doc-2026-11-12-africa-water-and-sanitation",
+  "title": "Smart Meters Hunt Leaking Water",
+  "post": "true"
  }
 ]
